@@ -221,11 +221,6 @@ export default function BookingsPage() {
                 <option value="cancelled">Cancelled</option>
               </select>
             </div>
-            
-            <button className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-              <FaPlus className="mr-2 -ml-1 h-4 w-4" />
-              New Booking
-            </button>
           </div>
         </div>
         
@@ -372,6 +367,11 @@ export default function BookingsPage() {
             <div className="mt-3 text-center">
               <h3 className="text-lg leading-6 font-medium text-gray-900">Close Bookings</h3>
               <div className="mt-4 px-7 py-3">
+                <div className="bg-blue-50 text-blue-800 p-3 rounded-md mb-4">
+                  <p className="text-sm font-medium">
+                    New booking creation is currently disabled.
+                  </p>
+                </div>
                 <p className="text-sm text-gray-500 mb-4">
                   This will temporarily disable the booking form on your website. Customers will not be able to make new bookings until you reopen it.
                 </p>
@@ -394,6 +394,8 @@ export default function BookingsPage() {
                     <option value={24}>24 hours</option>
                     <option value={48}>2 days</option>
                     <option value={72}>3 days</option>
+                    <option value={168}>1 week</option>
+                    <option value={336}>2 weeks</option>
                   </select>
                 </div>
               </div>

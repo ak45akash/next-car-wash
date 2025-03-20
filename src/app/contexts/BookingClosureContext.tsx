@@ -25,11 +25,11 @@ const BookingClosureContext = createContext<BookingClosureContextType>(defaultCo
 export const useBookingClosure = () => useContext(BookingClosureContext);
 
 export const BookingClosureProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isClosed, setIsClosed] = useState(false);
+  const [isClosed, setIsClosed] = useState(true); // Start with bookings closed by default
   const [closureEndTime, setClosureEndTime] = useState<Date | null>(null);
   const [remainingTime, setRemainingTime] = useState<string | null>(null);
 
-  // Check local storage on initial load
+  // Check local storage on initial load or initialize with default closure
   useEffect(() => {
     const storedEndTime = localStorage.getItem('bookingClosureEndTime');
     if (storedEndTime) {
@@ -41,6 +41,12 @@ export const BookingClosureProvider: React.FC<{ children: React.ReactNode }> = (
         // If end time has passed, clear storage
         localStorage.removeItem('bookingClosureEndTime');
       }
+    } else {
+      // If no stored time exists, set default closure for 24 hours
+      const defaultEndTime = new Date();
+      defaultEndTime.setHours(defaultEndTime.getHours() + 24);
+      setClosureEndTime(defaultEndTime);
+      localStorage.setItem('bookingClosureEndTime', defaultEndTime.toISOString());
     }
   }, []);
 
