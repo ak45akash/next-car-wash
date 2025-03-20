@@ -5,6 +5,7 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { FaCalendarAlt, FaClock, FaCar, FaUser, FaPhone, FaEnvelope } from 'react-icons/fa';
+import Image from 'next/image';
 
 type FormValues = {
   name: string;
@@ -279,11 +280,13 @@ const BookingForm = () => {
               <p className="mb-2 font-medium">UPI QR Code</p>
               <div className="flex flex-col items-center mb-4">
                 <p className="text-sm mb-2">Scan this QR code or use UPI ID</p>
-                <div className="w-40 h-40 bg-white p-2 border border-gray-300 flex items-center justify-center">
-                  <img 
+                <div className="w-40 h-40 bg-white p-2 border border-gray-300 flex items-center justify-center relative">
+                  <Image 
                     src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/QR_code_for_mobile_English_Wikipedia.svg/1200px-QR_code_for_mobile_English_Wikipedia.svg.png" 
                     alt="UPI QR Code"
-                    className="max-w-full max-h-full"
+                    fill
+                    sizes="160px"
+                    className="object-contain p-1"
                   />
                 </div>
                 <p className="mt-2 font-medium">UPI ID: shinewash@ybl</p>

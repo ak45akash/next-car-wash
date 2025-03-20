@@ -82,14 +82,14 @@ export default function AboutPage() {
                 to our original mission: providing exceptional car care with attention to 
                 detail, using eco-friendly methods, and delivering outstanding customer service.
               </p>
-              <div className="mt-8">
+              {/* <div className="mt-8">
                 <Link href="/locations" className="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center group">
                   Find our locations
                   <svg className="w-5 h-5 ml-2 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
                   </svg>
                 </Link>
-              </div>
+              </div> */}
             </motion.div>
             <motion.div 
               className="relative h-[500px] rounded-xl overflow-hidden shadow-2xl"
@@ -178,40 +178,82 @@ export default function AboutPage() {
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-4xl font-bold mb-4 text-gray-800">Our Expert Team</h2>
+            <h2 className="text-4xl font-bold mb-4 text-gray-800">Our State-of-the-Art Facilities</h2>
             <div className="w-24 h-1 bg-blue-600 mx-auto mb-6"></div>
             <p className="text-gray-600 max-w-2xl mx-auto text-lg">
-              Meet the dedicated professionals who make {siteMetadata.companyName} the premier car wash service in {siteMetadata.location.city}.
+              Experience the best car wash technology and premium amenities at {siteMetadata.companyName} in {siteMetadata.location.city}.
             </p>
           </motion.div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {teamMembers.map((member, index) => (
-              <motion.div 
-                key={member.id}
-                className="bg-white rounded-xl shadow-lg overflow-hidden group"
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.15 }}
-                viewport={{ once: true }}
-              >
-                <div className="relative h-80">
-                  <Image
-                    src={member.imageSrc}
-                    alt={member.name}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    style={{ objectPosition: "center 20%" }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                </div>
-                <div className="p-6 border-t border-gray-100">
-                  <h3 className="text-2xl font-bold text-gray-800">{member.name}</h3>
-                  <p className="text-blue-600 mb-3 font-medium">{member.role}</p>
-                  <p className="text-gray-600 text-sm">{member.bio}</p>
-                </div>
-              </motion.div>
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <motion.div 
+              className="bg-white rounded-xl shadow-lg overflow-hidden group"
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.15 }}
+              viewport={{ once: true }}
+            >
+              <div className="relative h-80">
+                <Image
+                  src="/images/facility-1.jpg"
+                  alt="Advanced Washing Equipment"
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              </div>
+              <div className="p-6 border-t border-gray-100">
+                <h3 className="text-2xl font-bold text-gray-800">Advanced Washing Equipment</h3>
+                <p className="text-blue-600 mb-3 font-medium">Touchless Technology</p>
+                <p className="text-gray-600">Our advanced touchless washing system uses high-pressure water jets and specialized cleaning solutions to remove dirt without scratching your vehicle's paint.</p>
+              </div>
+            </motion.div>
+
+            <motion.div 
+              className="bg-white rounded-xl shadow-lg overflow-hidden group"
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              viewport={{ once: true }}
+            >
+              <div className="relative h-80">
+                <Image
+                  src="/images/detailing.jpg"
+                  alt="Detailing Studio"
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              </div>
+              <div className="p-6 border-t border-gray-100">
+                <h3 className="text-2xl font-bold text-gray-800">Detailing Studio</h3>
+                <p className="text-blue-600 mb-3 font-medium">Professional Grade</p>
+                <p className="text-gray-600">Our detailing studio is equipped with professional-grade tools and premium products to restore and protect your vehicle's appearance.</p>
+              </div>
+            </motion.div>
+
+            <motion.div 
+              className="bg-white rounded-xl shadow-lg overflow-hidden group"
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.45 }}
+              viewport={{ once: true }}
+            >
+              <div className="relative h-80">
+                <Image
+                  src="/images/facility-3.jpg"
+                  alt="Customer Lounge"
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              </div>
+              <div className="p-6 border-t border-gray-100">
+                <h3 className="text-2xl font-bold text-gray-800">Customer Lounge</h3>
+                <p className="text-blue-600 mb-3 font-medium">Comfort & Convenience</p>
+                <p className="text-gray-600">Relax in our comfortable waiting area with complimentary Wi-Fi, refreshments, and a clear view of our wash bay while we service your vehicle.</p>
+              </div>
+            </motion.div>
           </div>
         </div>
       </section>
