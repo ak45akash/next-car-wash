@@ -3,49 +3,7 @@
 import ServiceCard from './ServiceCard';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-
-const services = [
-  {
-    id: 1,
-    title: 'Basic Wash',
-    description: 'Complete exterior wash with high-quality cleaning agents and hand-dry finish.',
-    imageSrc: '/images/car-wash.jpg',
-    price: '₹499',
-    link: '/book?service=basic-wash'
-  },
-  {
-    id: 2,
-    title: 'Steam Wash',
-    description: 'Deep-clean your car with our eco-friendly steam technology that uses less water.',
-    imageSrc: '/images/steam-wash.jpg',
-    price: '₹999',
-    link: '/book?service=steam-wash'
-  },
-  {
-    id: 3,
-    title: 'Interior Detailing',
-    description: 'Complete interior cleaning with vacuum, upholstery cleaning, and dashboard polish.',
-    imageSrc: '/images/interior-detailing.jpg',
-    price: '₹1,499',
-    link: '/book?service=interior-detailing'
-  },
-  {
-    id: 4,
-    title: 'Premium PPF',
-    description: 'Paint Protection Film (PPF) that protects your car from scratches and UV damage.',
-    imageSrc: '/images/ppf.jpg',
-    price: '₹15,999',
-    link: '/book?service=ppf'
-  },
-  {
-    id: 5,
-    title: 'Ceramic Coating',
-    description: 'Long-lasting premium ceramic coating that provides superior gloss and protection.',
-    imageSrc: '/images/ceramic-coating.jpg',
-    price: '₹24,999',
-    link: '/book?service=ceramic-coating'
-  }
-];
+import { homePageServices } from '../constants';
 
 const ServicesSection = () => {
   return (
@@ -67,7 +25,7 @@ const ServicesSection = () => {
         </motion.div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-          {services.map((service, index) => (
+          {homePageServices.map((service, index) => (
             <motion.div
               key={service.id}
               initial={{ opacity: 0, y: 50 }}

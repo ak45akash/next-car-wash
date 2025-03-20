@@ -1,12 +1,16 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from "next/font/google";
+import { siteMetadata } from './constants';
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Diamond Steam Car Wash | Mohali',
-  description: 'Premium car washing and detailing services in Mohali. Experience professional steam washing, interior detailing, ceramic coating and PPF installation.',
+  title: siteMetadata.title,
+  description: siteMetadata.description,
+  keywords: siteMetadata.keywords,
+  authors: [{ name: siteMetadata.author }],
+  metadataBase: new URL(siteMetadata.siteUrl),
 };
 
 export default function RootLayout({
@@ -16,7 +20,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className={inter.className}>{children}</body>
     </html>
   );
 }

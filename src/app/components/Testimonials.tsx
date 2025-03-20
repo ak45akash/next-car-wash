@@ -85,7 +85,7 @@ const Testimonials = () => {
           <div className="w-24 h-1 bg-blue-600 mx-auto mb-6"></div>
           <p className="text-gray-600 max-w-2xl mx-auto text-lg">
             We take pride in providing excellent service to our customers. 
-            Here's what some of them have to say about their experience with ShineWash.
+            Here&apos;s what some of them have to say about their experience with ShineWash.
           </p>
         </motion.div>
 
@@ -155,7 +155,7 @@ const Testimonials = () => {
                     </div>
                     
                     <p className="text-gray-700 text-xl italic mb-8 leading-relaxed">
-                      "{testimonials[currentIndex].comment}"
+                    &quot;{testimonials[currentIndex].comment}&quot;
                     </p>
                     
                     <div>

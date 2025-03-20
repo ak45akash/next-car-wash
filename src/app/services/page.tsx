@@ -6,129 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { FaCheck } from 'react-icons/fa';
 import { motion } from 'framer-motion';
-
-const services = [
-  {
-    id: 1,
-    title: 'Basic Wash',
-    description: 'Complete exterior wash with high-quality cleaning agents and hand-dry finish.',
-    imageSrc: '/images/dry-clean.jpg',
-    price: '₹499',
-    link: '/book?service=basic-wash',
-    features: [
-      'Exterior Hand Wash',
-      'Wheel Cleaning',
-      'Tire Dressing',
-      'Windows Cleaning',
-      'Hand Drying'
-    ]
-  },
-  {
-    id: 2,
-    title: 'Premium Wash',
-    description: 'Comprehensive wash package with interior vacuuming and dashboard polish.',
-    imageSrc: '/images/premium-wash.jpg',
-    price: '₹799',
-    link: '/book?service=premium-wash',
-    features: [
-      'All Basic Wash Features',
-      'Interior Vacuuming',
-      'Dashboard & Console Cleaning',
-      'Door Jambs Cleaning',
-      'Air Freshener'
-    ]
-  },
-  {
-    id: 3,
-    title: 'Steam Wash',
-    description: 'Deep-clean your car with our eco-friendly steam technology that uses less water.',
-    imageSrc: '/images/steam-wash.jpg',
-    price: '₹999',
-    link: '/book?service=steam-wash',
-    features: [
-      'High-Pressure Steam Cleaning',
-      'Stain Removal',
-      'Sanitization & Disinfection',
-      'Eco-Friendly Process',
-      'Interior & Exterior Treatment'
-    ]
-  },
-  {
-    id: 4,
-    title: 'Interior Detailing',
-    description: 'Complete interior cleaning with vacuum, upholstery cleaning, and dashboard polish.',
-    imageSrc: '/images/interior-detailing.jpg',
-    price: '₹1,499',
-    link: '/book?service=interior-detailing',
-    features: [
-      'Deep Vacuuming',
-      'Upholstery Shampooing',
-      'Leather Treatment',
-      'Dashboard & Console Detailing',
-      'Interior Glass Cleaning'
-    ]
-  },
-  {
-    id: 5,
-    title: 'Exterior Detailing',
-    description: 'Restore your car\'s exterior shine with clay bar treatment, polishing, and waxing.',
-    imageSrc: '/images/exterior-detailing.jpg',
-    price: '₹1,999',
-    link: '/book?service=exterior-detailing',
-    features: [
-      'Clay Bar Treatment',
-      'Machine Polishing',
-      'Scratch Removal',
-      'Paint Correction',
-      'Wax Application'
-    ]
-  },
-  {
-    id: 6,
-    title: 'Full Detailing',
-    description: 'Comprehensive interior and exterior detailing for a complete car refresh.',
-    imageSrc: '/images/full-detailing.jpg',
-    price: '₹2,999',
-    link: '/book?service=full-detailing',
-    features: [
-      'All Interior Detailing Features',
-      'All Exterior Detailing Features',
-      'Engine Bay Cleaning',
-      'Headlight Restoration',
-      'Undercarriage Wash'
-    ]
-  },
-  {
-    id: 7,
-    title: 'Paint Protection Film (PPF)',
-    description: 'Protect your car\'s paint from scratches, chips, and UV damage with premium PPF.',
-    imageSrc: '/images/ppf.jpg',
-    price: '₹15,999',
-    link: '/book?service=ppf',
-    features: [
-      'Premium Quality Film',
-      'UV Protection',
-      'Scratch & Chip Resistance',
-      'Self-Healing Technology',
-      '5-Year Warranty'
-    ]
-  },
-  {
-    id: 8,
-    title: 'Ceramic Coating',
-    description: 'Long-lasting protection with a high-gloss finish that repels water and contaminants.',
-    imageSrc: '/images/ceramic-coating.jpg',
-    price: '₹8,999',
-    link: '/book?service=ceramic-coating',
-    features: [
-      'Hydrophobic Protection',
-      'UV & Oxidation Resistance',
-      'Enhanced Gloss Finish',
-      'Chemical Stain Protection',
-      '2-Year Durability'
-    ]
-  }
-];
+import { fullServicesList } from '../constants';
 
 export default function ServicesPage() {
   return (
@@ -170,24 +48,26 @@ export default function ServicesPage() {
       </div>
       
       {/* Services List */}
-      <section className="py-16">
+      <section className="py-24">
         <div className="container-custom">
-          <motion.div
+          <motion.div 
+            className="text-center mb-16"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-center mb-12"
           >
-            <h2 className="text-3xl font-bold mb-4 text-gray-800">Premium Car Care Services</h2>
+            <h2 className="text-4xl font-bold mb-4 text-gray-800">Premium Car Care Services</h2>
             <div className="w-24 h-1 bg-blue-600 mx-auto mb-6"></div>
-            <p className="text-gray-600 max-w-3xl mx-auto">
-              Diamond Steam Car Wash offers a comprehensive range of services to keep your vehicle in pristine condition. 
-              From basic washes to premium detailing, we have everything your car needs.
+            <p className="text-gray-600 max-w-3xl mx-auto text-lg">
+              From a basic wash to our premium detailing packages, we have services 
+              for every need and budget. All services are performed by our 
+              experienced professionals using high-quality products.
             </p>
           </motion.div>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {services.map((service, index) => (
+            {fullServicesList.map((service, index) => (
               <motion.div 
                 key={service.id} 
                 className="bg-white rounded-lg shadow-lg overflow-hidden"
@@ -247,46 +127,25 @@ export default function ServicesPage() {
       </section>
       
       {/* Call to Action */}
-      <section className="py-16 bg-blue-600 text-white relative overflow-hidden">
-        {/* Background Decoration */}
-        <motion.div 
-          className="absolute top-0 right-0 w-96 h-96 bg-blue-500 rounded-full opacity-20"
-          initial={{ x: 100, y: -100 }}
-          whileInView={{ x: 50, y: -50 }}
-          transition={{ duration: 1.5, ease: "easeOut" }}
-          viewport={{ once: true }}
-        />
-        <motion.div 
-          className="absolute bottom-0 left-0 w-64 h-64 bg-blue-700 rounded-full opacity-20"
-          initial={{ x: -100, y: 100 }}
-          whileInView={{ x: -50, y: 50 }}
-          transition={{ duration: 1.5, ease: "easeOut" }}
-          viewport={{ once: true }}
-        />
-        
-        <div className="container-custom text-center relative z-10">
+      <section className="py-20 bg-gradient-to-r from-blue-600 to-blue-800 text-white">
+        <div className="container-custom text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="heading-lg mb-6">Ready to give your car the care it deserves?</h2>
-            <p className="text-xl mb-8 max-w-3xl mx-auto">
-              Book your appointment today and experience the Diamond Steam Car Wash difference.
-              Our professional team in Mohali is ready to make your car shine!
+            <h2 className="text-4xl font-bold mb-6">Ready to Experience the Diamond Difference?</h2>
+            <p className="text-xl mb-10 max-w-3xl mx-auto font-light">
+              Book an appointment today and give your car the premium care it deserves. 
+              Our team of professionals is ready to serve you.
             </p>
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Link href="/book" className="bg-white text-blue-600 hover:bg-gray-100 text-lg font-medium px-8 py-3 rounded-md transition duration-300 shadow-lg inline-flex items-center">
-                Book an Appointment
-                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                </svg>
-              </Link>
-            </motion.div>
+            <Link href="/book" className="bg-white text-blue-600 hover:bg-gray-100 text-lg font-medium px-10 py-4 rounded-lg transition-all duration-300 hover:shadow-lg hover:scale-105 inline-flex items-center">
+              Book an Appointment
+              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              </svg>
+            </Link>
           </motion.div>
         </div>
       </section>

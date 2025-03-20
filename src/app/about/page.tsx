@@ -5,6 +5,7 @@ import Footer from '../components/Footer';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { teamMembers, companyValues, siteMetadata } from '../constants';
 
 export default function AboutPage() {
   return (
@@ -35,7 +36,7 @@ export default function AboutPage() {
             <h1 className="heading-xl mb-4 font-bold text-5xl">About <span className="text-blue-400">Diamond</span></h1>
             <p className="text-2xl font-light leading-relaxed">
               We are passionate car enthusiasts dedicated to providing 
-              the finest car wash experience in Mohali.
+              the finest car wash experience in {siteMetadata.location.city}.
             </p>
             <div className="mt-8">
               <Link href="/services" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-all duration-300 hover:scale-105 inline-flex items-center">
@@ -61,12 +62,13 @@ export default function AboutPage() {
             >
               <h2 className="text-4xl font-bold mb-8 text-gray-800 relative">
                 Our Story
-                <span className="absolute bottom-0 left-0 w-20 h-1 bg-blue-600 mt-2"></span>
+                {/* <span className="absolute bottom-[-6px] left-0 w-20 h-1 bg-blue-600 mt-2"></span> */}
+                <div className="w-24 h-1 bg-blue-600 mb-6"></div>
               </h2>
               <p className="text-gray-600 mb-6 text-lg leading-relaxed">
-                Founded in 2015, Diamond Steam Car Wash started as a small car wash service in Mohali with 
+                Founded in 2015, {siteMetadata.companyName} started as a small car wash service in {siteMetadata.location.city} with 
                 just two employees and a passion for cars. Our founder, Raj Patel, noticed 
-                that many car wash services in the area weren't using the right techniques 
+                that many car wash services in the area weren&apos;t using the right techniques 
                 and products, often leaving vehicles with swirl marks and water spots.
               </p>
               <p className="text-gray-600 mb-6 text-lg leading-relaxed">
@@ -75,7 +77,7 @@ export default function AboutPage() {
                 to ensure every vehicle received the care it deserved.
               </p>
               <p className="text-gray-600 text-lg leading-relaxed">
-                Today, Diamond Steam Car Wash has grown to multiple locations across Punjab, serving 
+                Today, {siteMetadata.companyName} has grown to multiple locations across Punjab, serving 
                 thousands of satisfied customers. Despite our growth, we remain committed 
                 to our original mission: providing exceptional car care with attention to 
                 detail, using eco-friendly methods, and delivering outstanding customer service.
@@ -124,68 +126,44 @@ export default function AboutPage() {
             <h2 className="text-4xl font-bold mb-4 text-gray-800">Our Core Values</h2>
             <div className="w-24 h-1 bg-blue-600 mx-auto mb-6"></div>
             <p className="text-gray-600 max-w-2xl mx-auto text-lg">
-              At Diamond Steam Car Wash, our values guide everything we do. From how we treat our customers 
+              At {siteMetadata.companyName}, our values guide everything we do. From how we treat our customers 
               to the products we use, these principles are at the heart of our business.
             </p>
           </motion.div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-            <motion.div 
-              className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300"
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              viewport={{ once: true }}
-            >
-              <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 text-white">
-                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-                </svg>
-              </div>
-              <h3 className="text-2xl font-bold mb-4 text-center text-gray-800">Quality First</h3>
-              <p className="text-gray-600 text-center text-lg">
-                We never compromise on quality. From the products we use to the service we provide, 
-                excellence is our standard in every detail.
-              </p>
-            </motion.div>
-            
-            <motion.div 
-              className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300"
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              viewport={{ once: true }}
-            >
-              <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 text-white">
-                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path>
-                </svg>
-              </div>
-              <h3 className="text-2xl font-bold mb-4 text-center text-gray-800">Integrity</h3>
-              <p className="text-gray-600 text-center text-lg">
-                We believe in honesty and transparency in all our dealings with customers. 
-                What we promise is exactly what we deliver.
-              </p>
-            </motion.div>
-            
-            <motion.div 
-              className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300"
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              viewport={{ once: true }}
-            >
-              <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 text-white">
-                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h.5A2.5 2.5 0 0020 5.5v-1.65"></path>
-                </svg>
-              </div>
-              <h3 className="text-2xl font-bold mb-4 text-center text-gray-800">Eco-Friendly</h3>
-              <p className="text-gray-600 text-center text-lg">
-                We're committed to protecting the environment by using biodegradable cleaning 
-                products and water-saving techniques in all our services.
-              </p>
-            </motion.div>
+            {companyValues.map((value, index) => (
+              <motion.div 
+                key={value.id}
+                className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300"
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.2 }}
+                viewport={{ once: true }}
+              >
+                <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 text-white">
+                  {value.icon === 'shield-check' && (
+                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                    </svg>
+                  )}
+                  {value.icon === 'scale' && (
+                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path>
+                    </svg>
+                  )}
+                  {value.icon === 'leaf' && (
+                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h.5A2.5 2.5 0 0020 5.5v-1.65"></path>
+                    </svg>
+                  )}
+                </div>
+                <h3 className="text-2xl font-bold mb-4 text-center text-gray-800">{value.title}</h3>
+                <p className="text-gray-600 text-center text-lg">
+                  {value.description}
+                </p>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
@@ -203,106 +181,37 @@ export default function AboutPage() {
             <h2 className="text-4xl font-bold mb-4 text-gray-800">Our Expert Team</h2>
             <div className="w-24 h-1 bg-blue-600 mx-auto mb-6"></div>
             <p className="text-gray-600 max-w-2xl mx-auto text-lg">
-              Meet the dedicated professionals who make Diamond Steam Car Wash the premier car wash service in Mohali.
+              Meet the dedicated professionals who make {siteMetadata.companyName} the premier car wash service in {siteMetadata.location.city}.
             </p>
           </motion.div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            <motion.div 
-              className="bg-white rounded-xl shadow-lg overflow-hidden group"
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              viewport={{ once: true }}
-            >
-              <div className="relative h-80">
-                <Image
-                  src="/images/hero.jpg"
-                  alt="Raj Patel"
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  style={{ objectPosition: "center 20%" }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              </div>
-              <div className="p-6 border-t border-gray-100">
-                <h3 className="text-2xl font-bold text-gray-800">Raj Patel</h3>
-                <p className="text-blue-600 mb-3 font-medium">Founder & CEO</p>
-                <p className="text-gray-600 text-sm">15+ years of experience in automotive care</p>
-              </div>
-            </motion.div>
-            
-            <motion.div 
-              className="bg-white rounded-xl shadow-lg overflow-hidden group"
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              viewport={{ once: true }}
-            >
-              <div className="relative h-80">
-                <Image
-                  src="/images/detailing.jpg"
-                  alt="Priya Sharma"
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  style={{ objectPosition: "center 40%" }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              </div>
-              <div className="p-6 border-t border-gray-100">
-                <h3 className="text-2xl font-bold text-gray-800">Priya Sharma</h3>
-                <p className="text-blue-600 mb-3 font-medium">Operations Manager</p>
-                <p className="text-gray-600 text-sm">Expert in service optimization and customer satisfaction</p>
-              </div>
-            </motion.div>
-            
-            <motion.div 
-              className="bg-white rounded-xl shadow-lg overflow-hidden group"
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              viewport={{ once: true }}
-            >
-              <div className="relative h-80">
-                <Image
-                  src="/images/dry-clean.jpg"
-                  alt="Arjun Singh"
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  style={{ objectPosition: "center 30%" }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              </div>
-              <div className="p-6 border-t border-gray-100">
-                <h3 className="text-2xl font-bold text-gray-800">Arjun Singh</h3>
-                <p className="text-blue-600 mb-3 font-medium">Head Detailer</p>
-                <p className="text-gray-600 text-sm">Certified detailing specialist with international training</p>
-              </div>
-            </motion.div>
-            
-            <motion.div 
-              className="bg-white rounded-xl shadow-lg overflow-hidden group"
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.6 }}
-              viewport={{ once: true }}
-            >
-              <div className="relative h-80">
-                <Image
-                  src="/images/hero.jpg"
-                  alt="Neha Gupta"
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  style={{ objectPosition: "center 70%" }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              </div>
-              <div className="p-6 border-t border-gray-100">
-                <h3 className="text-2xl font-bold text-gray-800">Neha Gupta</h3>
-                <p className="text-blue-600 mb-3 font-medium">Customer Relations</p>
-                <p className="text-gray-600 text-sm">Passionate about creating exceptional customer experiences</p>
-              </div>
-            </motion.div>
+            {teamMembers.map((member, index) => (
+              <motion.div 
+                key={member.id}
+                className="bg-white rounded-xl shadow-lg overflow-hidden group"
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.15 }}
+                viewport={{ once: true }}
+              >
+                <div className="relative h-80">
+                  <Image
+                    src={member.imageSrc}
+                    alt={member.name}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    style={{ objectPosition: "center 20%" }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </div>
+                <div className="p-6 border-t border-gray-100">
+                  <h3 className="text-2xl font-bold text-gray-800">{member.name}</h3>
+                  <p className="text-blue-600 mb-3 font-medium">{member.role}</p>
+                  <p className="text-gray-600 text-sm">{member.bio}</p>
+                </div>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
@@ -326,7 +235,7 @@ export default function AboutPage() {
           >
             <h2 className="text-4xl font-bold mb-6">Experience Premium Car Care Today</h2>
             <p className="text-xl mb-10 max-w-3xl mx-auto font-light">
-              Join thousands of satisfied customers who trust Diamond Steam Car Wash with their vehicles.
+              Join thousands of satisfied customers who trust {siteMetadata.companyName} with their vehicles.
               Our professional team is ready to give your car the care it deserves!
             </p>
             <div className="flex flex-wrap justify-center gap-6">

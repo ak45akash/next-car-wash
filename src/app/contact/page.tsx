@@ -41,6 +41,7 @@ export default function ContactPage() {
       setFormData({ name: '', email: '', phone: '', message: '' });
       setSubmitted(true);
     } catch (err) {
+      console.log(err);
       setError('An error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -56,7 +57,7 @@ export default function ContactPage() {
           <div className="text-center mb-12">
             <h1 className="heading-lg mb-4">Contact Us</h1>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Have questions about our services? Contact our team and we'll be happy to assist you.
+              Have questions about our services? Contact our team and we&apos;ll be happy to assist you.
             </p>
           </div>
           
@@ -74,7 +75,7 @@ export default function ContactPage() {
                   </div>
                   <h3 className="text-xl font-bold mb-2 text-green-600">Message Sent!</h3>
                   <p className="text-gray-600">
-                    Thank you for contacting us. We'll get back to you shortly.
+                    Thank you for contacting us. We&apos;ll get back to you shortly.
                   </p>
                   <button 
                     onClick={() => setSubmitted(false)}
