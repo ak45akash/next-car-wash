@@ -71,9 +71,12 @@ const bookings = [
 export default function BookingsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [bookingsData, setBookingsData] = useState(bookings);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [bookingToCancel, setBookingToCancel] = useState<number | null>(null);
   
   // Filter bookings based on search term and status filter
-  const filteredBookings = bookings.filter(booking => {
+  const filteredBookings = bookingsData.filter(booking => {
     const matchesSearch = 
       booking.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
       booking.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -86,6 +89,25 @@ export default function BookingsPage() {
     
     return matchesSearch && matchesFilter;
   });
+
+  // Handle booking cancellation
+  const handleCancelClick = (bookingId: number) => {
+    setBookingToCancel(bookingId);
+    setShowConfirmModal(true);
+  };
+
+  const confirmCancelBooking = () => {
+    if (bookingToCancel !== null) {
+      const updatedBookings = bookingsData.map(booking => 
+        booking.id === bookingToCancel 
+          ? { ...booking, status: 'Cancelled' } 
+          : booking
+      );
+      setBookingsData(updatedBookings);
+      setShowConfirmModal(false);
+      setBookingToCancel(null);
+    }
+  };
 
   const getStatusClass = (status: string) => {
     switch(status.toLowerCase()) {
@@ -218,7 +240,14 @@ export default function BookingsPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button className="text-blue-600 hover:text-blue-900 mr-4">Edit</button>
-                    <button className="text-red-600 hover:text-red-900">Cancel</button>
+                    {booking.status.toLowerCase() !== 'cancelled' && (
+                      <button 
+                        className="text-red-600 hover:text-red-900"
+                        onClick={() => handleCancelClick(booking.id)}
+                      >
+                        Cancel
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -236,7 +265,7 @@ export default function BookingsPage() {
           <div className="flex justify-between items-center">
             <div className="text-sm text-gray-700">
               Showing <span className="font-medium">{filteredBookings.length}</span> of{' '}
-              <span className="font-medium">{bookings.length}</span> bookings
+              <span className="font-medium">{bookingsData.length}</span> bookings
             </div>
             <div className="flex-1 flex justify-end">
               <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
@@ -249,9 +278,6 @@ export default function BookingsPage() {
                 <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600 hover:bg-blue-100">
                   2
                 </button>
-                <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
-                  3
-                </button>
                 <button className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                   Next
                 </button>
@@ -260,6 +286,36 @@ export default function BookingsPage() {
           </div>
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+          <div className="relative mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3 text-center">
+              <h3 className="text-lg leading-6 font-medium text-gray-900">Cancel Booking</h3>
+              <div className="mt-2 px-7 py-3">
+                <p className="text-sm text-gray-500">
+                  Are you sure you want to cancel this booking? This action cannot be undone.
+                </p>
+              </div>
+              <div className="items-center px-4 py-3">
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md w-24 mr-2 shadow-sm hover:bg-gray-400"
+                >
+                  No
+                </button>
+                <button
+                  onClick={confirmCancelBooking}
+                  className="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md w-24 shadow-sm hover:bg-red-700"
+                >
+                  Yes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 } 
