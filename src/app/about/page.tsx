@@ -5,7 +5,7 @@ import Footer from '../components/Footer';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { teamMembers, companyValues, siteMetadata } from '../constants';
+import { companyValues, siteMetadata } from '../constants';
 
 export default function AboutPage() {
   return (
@@ -205,7 +205,7 @@ export default function AboutPage() {
               <div className="p-6 border-t border-gray-100">
                 <h3 className="text-2xl font-bold text-gray-800">Advanced Washing Equipment</h3>
                 <p className="text-blue-600 mb-3 font-medium">Touchless Technology</p>
-                <p className="text-gray-600">Our advanced touchless washing system uses high-pressure water jets and specialized cleaning solutions to remove dirt without scratching your vehicle's paint.</p>
+                <p className="text-gray-600">Our advanced touchless washing system uses high-pressure water jets and specialized cleaning solutions to remove dirt without scratching your vehicle&apos;s paint.</p>
               </div>
             </motion.div>
 
@@ -228,7 +228,7 @@ export default function AboutPage() {
               <div className="p-6 border-t border-gray-100">
                 <h3 className="text-2xl font-bold text-gray-800">Detailing Studio</h3>
                 <p className="text-blue-600 mb-3 font-medium">Professional Grade</p>
-                <p className="text-gray-600">Our detailing studio is equipped with professional-grade tools and premium products to restore and protect your vehicle's appearance.</p>
+                <p className="text-gray-600">Our detailing studio is equipped with professional-grade tools and premium products to restore and protect your vehicle&apos;s appearance.</p>
               </div>
             </motion.div>
 
