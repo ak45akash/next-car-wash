@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
-import { FaSearch, FaFilter, FaPlus } from 'react-icons/fa';
+import { FaSearch, FaFilter, FaPlus, FaCalendarTimes, FaClock } from 'react-icons/fa';
+import { useBookingClosure } from '../../contexts/BookingClosureContext';
 
 // Mock booking data
 const bookings = [
@@ -75,6 +76,13 @@ export default function BookingsPage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState<number | null>(null);
   
+  // Booking closure state
+  const [closureHours, setClosureHours] = useState(1);
+  const [showClosureModal, setShowClosureModal] = useState(false);
+  
+  // Use the booking closure context
+  const { isClosed, remainingTime, closeBookings, reopenBookings } = useBookingClosure();
+  
   // Filter bookings based on search term and status filter
   const filteredBookings = bookingsData.filter(booking => {
     const matchesSearch = 
@@ -109,6 +117,16 @@ export default function BookingsPage() {
     }
   };
 
+  // Handle booking closure
+  const handleClosureClick = () => {
+    setShowClosureModal(true);
+  };
+
+  const confirmClosureAction = () => {
+    closeBookings(closureHours);
+    setShowClosureModal(false);
+  };
+
   const getStatusClass = (status: string) => {
     switch(status.toLowerCase()) {
       case 'completed':
@@ -139,9 +157,39 @@ export default function BookingsPage() {
 
   return (
     <DashboardLayout>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-800">Bookings</h1>
-        <p className="text-gray-600">Manage all customer bookings.</p>
+      <div className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Bookings</h1>
+          <p className="text-gray-600">Manage all customer bookings.</p>
+        </div>
+        <div>
+          {isClosed ? (
+            <div className="flex flex-col items-end">
+              <div className="mb-2 text-right">
+                <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium inline-flex items-center">
+                  <FaCalendarTimes className="mr-1" /> Bookings Closed
+                </span>
+                <p className="text-sm text-gray-600 mt-1">
+                  {remainingTime ? `Reopens in ${remainingTime}` : 'Temporarily closed'}
+                </p>
+              </div>
+              <button 
+                onClick={reopenBookings}
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              >
+                Reopen Bookings
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={handleClosureClick}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            >
+              <FaCalendarTimes className="mr-2 -ml-1 h-4 w-4" />
+              Close Bookings
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -310,6 +358,57 @@ export default function BookingsPage() {
                   className="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md w-24 shadow-sm hover:bg-red-700"
                 >
                   Yes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Booking Closure Modal */}
+      {showClosureModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+          <div className="relative mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3 text-center">
+              <h3 className="text-lg leading-6 font-medium text-gray-900">Close Bookings</h3>
+              <div className="mt-4 px-7 py-3">
+                <p className="text-sm text-gray-500 mb-4">
+                  This will temporarily disable the booking form on your website. Customers will not be able to make new bookings until you reopen it.
+                </p>
+                <div className="flex items-center justify-center mb-4">
+                  <FaClock className="text-gray-500 mr-2" />
+                  <label htmlFor="closureHours" className="block text-sm font-medium text-gray-700 mr-3">
+                    Close for
+                  </label>
+                  <select
+                    id="closureHours"
+                    className="mt-1 block pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                    value={closureHours}
+                    onChange={(e) => setClosureHours(Number(e.target.value))}
+                  >
+                    <option value={1}>1 hour</option>
+                    <option value={2}>2 hours</option>
+                    <option value={4}>4 hours</option>
+                    <option value={8}>8 hours</option>
+                    <option value={12}>12 hours</option>
+                    <option value={24}>24 hours</option>
+                    <option value={48}>2 days</option>
+                    <option value={72}>3 days</option>
+                  </select>
+                </div>
+              </div>
+              <div className="items-center px-4 py-3">
+                <button
+                  onClick={() => setShowClosureModal(false)}
+                  className="px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md w-24 mr-2 shadow-sm hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmClosureAction}
+                  className="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md w-24 shadow-sm hover:bg-red-700"
+                >
+                  Close
                 </button>
               </div>
             </div>

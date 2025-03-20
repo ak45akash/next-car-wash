@@ -6,6 +6,8 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { FaCalendarAlt, FaClock, FaCar, FaUser, FaPhone, FaEnvelope } from 'react-icons/fa';
 import Image from 'next/image';
+import { useBookingClosure } from '../contexts/BookingClosureContext';
+import BookingClosureNotice from './BookingClosureNotice';
 
 type FormValues = {
   name: string;
@@ -42,6 +44,7 @@ const BookingForm = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   
   const { register, handleSubmit, watch, formState: { errors }, reset } = useForm<FormValues>();
+  const { isClosed } = useBookingClosure();
   
   const paymentMethod = watch('paymentMethod');
   const servicePrice = services.find(service => service.id === selectedService)?.price || '';
@@ -93,243 +96,262 @@ const BookingForm = () => {
     <div className="bg-white rounded-lg shadow-md p-8">
       <h2 className="text-2xl font-bold mb-6 text-center">Book Your Appointment</h2>
       
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Personal Information */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-gray-700 mb-2 font-medium">
-              Full Name <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaUser className="text-gray-400" />
-              </div>
-              <input
-                type="text"
-                className={`w-full pl-10 pr-3 py-2 rounded-md border ${errors.name ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                placeholder="Your name"
-                {...register('name', { required: 'Name is required' })}
-              />
-            </div>
-            {errors.name && <p className="mt-1 text-red-500 text-sm">{errors.name.message}</p>}
-          </div>
-          
-          <div>
-            <label className="block text-gray-700 mb-2 font-medium">
-              Phone Number <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaPhone className="text-gray-400" />
-              </div>
-              <input
-                type="tel"
-                className={`w-full pl-10 pr-3 py-2 rounded-md border ${errors.phone ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                placeholder="Your phone number"
-                {...register('phone', { 
-                  required: 'Phone number is required',
-                  pattern: {
-                    value: /^[0-9]{10}$/,
-                    message: 'Please enter a valid 10-digit phone number'
-                  }
-                })}
-              />
-            </div>
-            {errors.phone && <p className="mt-1 text-red-500 text-sm">{errors.phone.message}</p>}
-          </div>
-          
-          <div>
-            <label className="block text-gray-700 mb-2 font-medium">
-              Email Address <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaEnvelope className="text-gray-400" />
-              </div>
-              <input
-                type="email"
-                className={`w-full pl-10 pr-3 py-2 rounded-md border ${errors.email ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                placeholder="Your email address"
-                {...register('email', { 
-                  required: 'Email is required',
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: 'Please enter a valid email address'
-                  }
-                })}
-              />
-            </div>
-            {errors.email && <p className="mt-1 text-red-500 text-sm">{errors.email.message}</p>}
-          </div>
-          
-          <div>
-            <label className="block text-gray-700 mb-2 font-medium">
-              Car Model <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaCar className="text-gray-400" />
-              </div>
-              <input
-                type="text"
-                className={`w-full pl-10 pr-3 py-2 rounded-md border ${errors.carModel ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                placeholder="e.g., Honda City, Maruti Swift"
-                {...register('carModel', { required: 'Car model is required' })}
-              />
-            </div>
-            {errors.carModel && <p className="mt-1 text-red-500 text-sm">{errors.carModel.message}</p>}
+      <BookingClosureNotice />
+      
+      {isClosed ? (
+        <div className="text-center py-12">
+          <div className="animate-pulse">
+            <Image 
+              src="/images/closed.svg"
+              alt="Bookings Closed"
+              width={200}
+              height={200}
+              className="mx-auto"
+            />
+            <p className="text-gray-500 mt-4">
+              Please check back later when our booking system reopens.
+            </p>
           </div>
         </div>
-        
-        {/* Service Selection */}
-        <div>
-          <label className="block text-gray-700 mb-2 font-medium">
-            Select Service <span className="text-red-500">*</span>
-          </label>
-          <select
-            className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={selectedService}
-            onChange={(e) => setSelectedService(e.target.value)}
-          >
-            {services.map((service) => (
-              <option key={service.id} value={service.id}>
-                {service.name} - {service.price}
-              </option>
-            ))}
-          </select>
-          <input type="hidden" {...register('service', { required: true })} value={selectedService} />
-        </div>
-        
-        {/* Date and Time */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-gray-700 mb-2 font-medium">
-              Select Date <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaCalendarAlt className="text-gray-400" />
-              </div>
-              <DatePicker
-                selected={selectedDate}
-                onChange={(date) => setSelectedDate(date)}
-                minDate={new Date()}
-                className="w-full pl-10 pr-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholderText="Select a date"
-              />
-            </div>
-          </div>
-          
-          <div>
-            <label className="block text-gray-700 mb-2 font-medium">
-              Select Time <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaClock className="text-gray-400" />
-              </div>
-              <select
-                className="w-full pl-10 pr-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                {...register('time', { required: true })}
-              >
-                <option value="">Select a time slot</option>
-                {timeSlots.map((time) => (
-                  <option key={time} value={time}>{time}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-        
-        {/* Payment Method */}
-        <div>
-          <label className="block text-gray-700 mb-4 font-medium">
-            Payment Method <span className="text-red-500">*</span>
-          </label>
-          
-          <div className="space-y-3">
-            <div className="flex items-center">
-              <input
-                type="radio"
-                id="payment-later"
-                value="pay-later"
-                className="w-4 h-4 text-blue-600"
-                {...register('paymentMethod', { required: true })}
-              />
-              <label htmlFor="payment-later" className="ml-2 block text-gray-700">
-                Pay at Center
+      ) : (
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* Personal Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-gray-700 mb-2 font-medium">
+                Full Name <span className="text-red-500">*</span>
               </label>
-            </div>
-            
-            <div className="flex items-center">
-              <input
-                type="radio"
-                id="payment-upi"
-                value="upi"
-                className="w-4 h-4 text-blue-600"
-                {...register('paymentMethod', { required: true })}
-              />
-              <label htmlFor="payment-upi" className="ml-2 block text-gray-700">
-                Pay Now via UPI
-              </label>
-            </div>
-          </div>
-          
-          {paymentMethod === 'upi' && (
-            <div className="mt-4 p-4 bg-blue-50 rounded-md">
-              <p className="mb-2 font-medium">UPI QR Code</p>
-              <div className="flex flex-col items-center mb-4">
-                <p className="text-sm mb-2">Scan this QR code or use UPI ID</p>
-                <div className="w-40 h-40 bg-white p-2 border border-gray-300 flex items-center justify-center relative">
-                  <Image 
-                    src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/QR_code_for_mobile_English_Wikipedia.svg/1200px-QR_code_for_mobile_English_Wikipedia.svg.png" 
-                    alt="UPI QR Code"
-                    fill
-                    sizes="160px"
-                    className="object-contain p-1"
-                  />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaUser className="text-gray-400" />
                 </div>
-                <p className="mt-2 font-medium">UPI ID: shinewash@ybl</p>
-              </div>
-              
-              <div className="mb-3">
-                <label className="block text-gray-700 mb-2 text-sm font-medium">
-                  Enter your UPI Transaction ID
-                </label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Transaction ID"
-                  {...register('upiId', { 
-                    required: paymentMethod === 'upi' ? 'UPI Transaction ID is required' : false
+                  className={`w-full pl-10 pr-3 py-2 rounded-md border ${errors.name ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  placeholder="Your name"
+                  {...register('name', { required: 'Name is required' })}
+                />
+              </div>
+              {errors.name && <p className="mt-1 text-red-500 text-sm">{errors.name.message}</p>}
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 mb-2 font-medium">
+                Phone Number <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaPhone className="text-gray-400" />
+                </div>
+                <input
+                  type="tel"
+                  className={`w-full pl-10 pr-3 py-2 rounded-md border ${errors.phone ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  placeholder="Your phone number"
+                  {...register('phone', { 
+                    required: 'Phone number is required',
+                    pattern: {
+                      value: /^[0-9]{10}$/,
+                      message: 'Please enter a valid 10-digit phone number'
+                    }
                   })}
                 />
-                {errors.upiId && <p className="mt-1 text-red-500 text-sm">{errors.upiId.message}</p>}
+              </div>
+              {errors.phone && <p className="mt-1 text-red-500 text-sm">{errors.phone.message}</p>}
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 mb-2 font-medium">
+                Email Address <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaEnvelope className="text-gray-400" />
+                </div>
+                <input
+                  type="email"
+                  className={`w-full pl-10 pr-3 py-2 rounded-md border ${errors.email ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  placeholder="Your email address"
+                  {...register('email', { 
+                    required: 'Email is required',
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: 'Please enter a valid email address'
+                    }
+                  })}
+                />
+              </div>
+              {errors.email && <p className="mt-1 text-red-500 text-sm">{errors.email.message}</p>}
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 mb-2 font-medium">
+                Car Model <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaCar className="text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  className={`w-full pl-10 pr-3 py-2 rounded-md border ${errors.carModel ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  placeholder="e.g., Honda City, Maruti Swift"
+                  {...register('carModel', { required: 'Car model is required' })}
+                />
+              </div>
+              {errors.carModel && <p className="mt-1 text-red-500 text-sm">{errors.carModel.message}</p>}
+            </div>
+          </div>
+          
+          {/* Service Selection */}
+          <div>
+            <label className="block text-gray-700 mb-2 font-medium">
+              Select Service <span className="text-red-500">*</span>
+            </label>
+            <select
+              className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={selectedService}
+              onChange={(e) => setSelectedService(e.target.value)}
+            >
+              {services.map((service) => (
+                <option key={service.id} value={service.id}>
+                  {service.name} - {service.price}
+                </option>
+              ))}
+            </select>
+            <input type="hidden" {...register('service', { required: true })} value={selectedService} />
+          </div>
+          
+          {/* Date and Time */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-gray-700 mb-2 font-medium">
+                Select Date <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaCalendarAlt className="text-gray-400" />
+                </div>
+                <DatePicker
+                  selected={selectedDate}
+                  onChange={(date) => setSelectedDate(date)}
+                  minDate={new Date()}
+                  className="w-full pl-10 pr-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholderText="Select a date"
+                />
               </div>
             </div>
-          )}
-        </div>
-        
-        <div className="pt-4">
-          <button
-            type="submit"
-            className="w-full btn-primary py-3 flex items-center justify-center"
-            disabled={isProcessing}
-          >
-            {isProcessing ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Processing...
-              </>
-            ) : (
-              'Book Appointment'
+            
+            <div>
+              <label className="block text-gray-700 mb-2 font-medium">
+                Select Time <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaClock className="text-gray-400" />
+                </div>
+                <select
+                  className="w-full pl-10 pr-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  {...register('time', { required: true })}
+                >
+                  <option value="">Select a time slot</option>
+                  {timeSlots.map((time) => (
+                    <option key={time} value={time}>{time}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          {/* Payment Method */}
+          <div>
+            <label className="block text-gray-700 mb-4 font-medium">
+              Payment Method <span className="text-red-500">*</span>
+            </label>
+            
+            <div className="space-y-3">
+              <div className="flex items-center">
+                <input
+                  type="radio"
+                  id="payment-later"
+                  value="pay-later"
+                  className="w-4 h-4 text-blue-600"
+                  {...register('paymentMethod', { required: true })}
+                />
+                <label htmlFor="payment-later" className="ml-2 block text-gray-700">
+                  Pay at Center
+                </label>
+              </div>
+              
+              <div className="flex items-center">
+                <input
+                  type="radio"
+                  id="payment-upi"
+                  value="upi"
+                  className="w-4 h-4 text-blue-600"
+                  {...register('paymentMethod', { required: true })}
+                />
+                <label htmlFor="payment-upi" className="ml-2 block text-gray-700">
+                  Pay Now via UPI
+                </label>
+              </div>
+            </div>
+            
+            {paymentMethod === 'upi' && (
+              <div className="mt-4 p-4 bg-blue-50 rounded-md">
+                <p className="mb-2 font-medium">UPI QR Code</p>
+                <div className="flex flex-col items-center mb-4">
+                  <p className="text-sm mb-2">Scan this QR code or use UPI ID</p>
+                  <div className="w-40 h-40 bg-white p-2 border border-gray-300 flex items-center justify-center relative">
+                    <Image 
+                      src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/QR_code_for_mobile_English_Wikipedia.svg/1200px-QR_code_for_mobile_English_Wikipedia.svg.png" 
+                      alt="UPI QR Code"
+                      fill
+                      sizes="160px"
+                      className="object-contain p-1"
+                    />
+                  </div>
+                  <p className="mt-2 font-medium">UPI ID: shinewash@ybl</p>
+                </div>
+                
+                <div className="mb-3">
+                  <label className="block text-gray-700 mb-2 text-sm font-medium">
+                    Enter your UPI Transaction ID
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Transaction ID"
+                    {...register('upiId', { 
+                      required: paymentMethod === 'upi' ? 'UPI Transaction ID is required' : false
+                    })}
+                  />
+                  {errors.upiId && <p className="mt-1 text-red-500 text-sm">{errors.upiId.message}</p>}
+                </div>
+              </div>
             )}
-          </button>
-        </div>
-      </form>
+          </div>
+          
+          <div className="pt-4">
+            <button
+              type="submit"
+              className="w-full btn-primary py-3 flex items-center justify-center"
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Processing...
+                </>
+              ) : (
+                'Book Appointment'
+              )}
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 };
