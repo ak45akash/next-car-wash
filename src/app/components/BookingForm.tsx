@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -8,6 +8,7 @@ import { FaCalendarAlt, FaClock, FaCar, FaUser, FaPhone, FaEnvelope } from 'reac
 import Image from 'next/image';
 import { useBookingClosure } from '../contexts/BookingClosureContext';
 import BookingClosureNotice from './BookingClosureNotice';
+import { createBooking, getServices } from '@/lib/supabase';
 
 type FormValues = {
   name: string;
@@ -22,15 +23,15 @@ type FormValues = {
   terms: boolean;
 };
 
-const services = [
-  { id: 'basic-wash', name: 'Basic Wash', price: '₹499' },
-  { id: 'premium-wash', name: 'Premium Wash', price: '₹799' },
-  { id: 'steam-wash', name: 'Steam Wash', price: '₹999' },
-  { id: 'interior-detailing', name: 'Interior Detailing', price: '₹1,499' },
-  { id: 'exterior-detailing', name: 'Exterior Detailing', price: '₹1,999' },
-  { id: 'full-detailing', name: 'Full Detailing', price: '₹2,999' },
-  { id: 'ppf', name: 'Paint Protection Film (PPF)', price: '₹15,999' },
-];
+type Service = {
+  id: string;
+  name: string;
+  price: number;
+  category: string;
+  description: string;
+  duration: number;
+  status: string;
+}
 
 const timeSlots = [
   '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', 
@@ -40,36 +41,115 @@ const timeSlots = [
 
 const BookingForm = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedService, setSelectedService] = useState('basic-wash');
+  const [selectedService, setSelectedService] = useState('');
   const [bookingCompleted, setBookingCompleted] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   const { register, handleSubmit, watch, formState: { errors }, reset } = useForm<FormValues>();
   const { isClosed } = useBookingClosure();
   
   const paymentMethod = watch('paymentMethod');
-  const servicePrice = services.find(service => service.id === selectedService)?.price || '';
+  const selectedServiceObject = services.find(service => service.id === selectedService);
+  const servicePrice = selectedServiceObject ? `₹${selectedServiceObject.price}` : '';
+
+  useEffect(() => {
+    async function loadServices() {
+      try {
+        const serviceData = await getServices();
+        setServices(serviceData || []);
+        if (serviceData && serviceData.length > 0) {
+          setSelectedService(serviceData[0].id);
+        }
+      } catch (err) {
+        console.error('Error loading services:', err);
+        setError('Failed to load services. Please refresh the page.');
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    loadServices();
+  }, []);
 
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
+    if (!selectedDate) {
+      return; // Date validation
+    }
+    
     setIsProcessing(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    console.log('Booking data:', {
-      ...data,
-      date: selectedDate,
-      service: selectedService,
-      price: servicePrice
-    });
-    
-    // Reset form and show success message
-    reset();
-    setSelectedDate(null);
-    setSelectedService('basic-wash');
-    setBookingCompleted(true);
-    setIsProcessing(false);
+    try {
+      // Format date for database
+      const formattedDate = selectedDate.toISOString().split('T')[0];
+      
+      // Find service details
+      const service = services.find(s => s.id === selectedService);
+      
+      // Create booking object
+      const bookingData = {
+        customer_name: data.name,
+        customer_email: data.email,
+        customer_phone: data.phone,
+        car_model: data.carModel,
+        service_id: selectedService,
+        service_name: service?.name || '',
+        service_price: service?.price || 0,
+        date: formattedDate,
+        time_slot: data.time,
+        payment_method: data.paymentMethod,
+        upi_id: data.upiId || null,
+        status: 'pending',
+        created_at: new Date().toISOString()
+      };
+      
+      // Submit to Supabase
+      await createBooking(bookingData);
+      
+      // Reset form and show success message
+      reset();
+      setSelectedDate(null);
+      if (services.length > 0) {
+        setSelectedService(services[0].id);
+      }
+      setBookingCompleted(true);
+    } catch (err) {
+      console.error('Error creating booking:', err);
+      alert('Failed to create booking. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg shadow-md p-8 text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Loading services...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white rounded-lg shadow-md p-8 text-center">
+        <div className="text-red-500 mb-4">
+          <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <p className="text-gray-700">{error}</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="mt-4 btn-primary"
+        >
+          Refresh Page
+        </button>
+      </div>
+    );
+  }
 
   if (bookingCompleted) {
     return (
@@ -215,7 +295,7 @@ const BookingForm = () => {
             >
               {services.map((service) => (
                 <option key={service.id} value={service.id}>
-                  {service.name} - {service.price}
+                  {service.name} - ₹{service.price}
                 </option>
               ))}
             </select>
@@ -240,6 +320,7 @@ const BookingForm = () => {
                   placeholderText="Select a date"
                 />
               </div>
+              {!selectedDate && errors.date && <p className="mt-1 text-red-500 text-sm">Date is required</p>}
             </div>
             
             <div>
@@ -251,15 +332,16 @@ const BookingForm = () => {
                   <FaClock className="text-gray-400" />
                 </div>
                 <select
-                  className="w-full pl-10 pr-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  {...register('time', { required: true })}
+                  className={`w-full pl-10 pr-3 py-2 rounded-md border ${errors.time ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  {...register('time', { required: 'Time is required' })}
                 >
                   <option value="">Select a time slot</option>
-                  {timeSlots.map((time) => (
-                    <option key={time} value={time}>{time}</option>
+                  {timeSlots.map((slot) => (
+                    <option key={slot} value={slot}>{slot}</option>
                   ))}
                 </select>
               </div>
+              {errors.time && <p className="mt-1 text-red-500 text-sm">{errors.time.message}</p>}
             </div>
           </div>
           
@@ -268,93 +350,101 @@ const BookingForm = () => {
             <label className="block text-gray-700 mb-4 font-medium">
               Payment Method <span className="text-red-500">*</span>
             </label>
-            
-            <div className="space-y-3">
-              <div className="flex items-center">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <label className="relative flex items-center p-4 border rounded-md cursor-pointer hover:bg-gray-50">
                 <input
                   type="radio"
-                  id="payment-pay-later"
-                  value="pay-later"
-                  className="w-4 h-4 text-blue-600"
-                  {...register('paymentMethod', { required: true })}
+                  value="cash"
+                  className="mr-2"
+                  {...register('paymentMethod', { required: 'Payment method is required' })}
                 />
-                <label htmlFor="payment-pay-later" className="ml-2 block text-gray-700">
-                  Pay at Location
-                </label>
-              </div>
+                <span className="ml-2">Pay at Location</span>
+              </label>
               
-              <div className="flex items-center">
+              <label className="relative flex items-center p-4 border rounded-md cursor-pointer hover:bg-gray-50">
                 <input
                   type="radio"
-                  id="payment-upi"
-                  value="upi"
-                  className="w-4 h-4 text-blue-600"
-                  {...register('paymentMethod', { required: true })}
+                  value="card"
+                  className="mr-2"
+                  {...register('paymentMethod', { required: 'Payment method is required' })}
                 />
-                <label htmlFor="payment-upi" className="ml-2 block text-gray-700">
-                  Pay Now via UPI
-                </label>
-              </div>
+                <span className="ml-2">Card Payment</span>
+              </label>
+              
+              <label className="relative flex items-center p-4 border rounded-md cursor-pointer hover:bg-gray-50">
+                <input
+                  type="radio"
+                  value="upi"
+                  className="mr-2"
+                  {...register('paymentMethod', { required: 'Payment method is required' })}
+                />
+                <span className="ml-2">UPI Payment</span>
+              </label>
             </div>
+            {errors.paymentMethod && <p className="mt-1 text-red-500 text-sm">{errors.paymentMethod.message}</p>}
             
             {paymentMethod === 'upi' && (
-              <div className="mt-4 p-4 bg-blue-50 rounded-md">
-                <p className="mb-2 font-medium">UPI QR Code</p>
-                <div className="flex flex-col items-center mb-4">
-                  <p className="text-sm mb-2">Scan this QR code or use UPI ID</p>
-                  <div className="w-40 h-40 bg-white p-2 border border-gray-300 flex items-center justify-center">
-                    <img 
-                      src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/QR_code_for_mobile_English_Wikipedia.svg/1200px-QR_code_for_mobile_English_Wikipedia.svg.png" 
-                      alt="UPI QR Code"
-                      className="max-w-full max-h-full"
-                    />
-                  </div>
-                </div>
-                <div className="flex flex-col space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">UPI ID:</span>
-                    <span className="text-sm font-medium">diamond@ybl</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Amount:</span>
-                    <span className="text-sm font-medium">{servicePrice}</span>
-                  </div>
-                </div>
+              <div className="mt-4">
+                <label className="block text-gray-700 mb-2 font-medium">
+                  UPI ID <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  className={`w-full px-3 py-2 rounded-md border ${errors.upiId ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  placeholder="your-upi-id@bank"
+                  {...register('upiId', { 
+                    required: paymentMethod === 'upi' ? 'UPI ID is required' : false,
+                    pattern: {
+                      value: /^[a-zA-Z0-9.\-_]{2,49}@[a-zA-Z]{3,}$/,
+                      message: 'Please enter a valid UPI ID'
+                    }
+                  })}
+                />
+                {errors.upiId && <p className="mt-1 text-red-500 text-sm">{errors.upiId.message}</p>}
               </div>
             )}
           </div>
           
           {/* Terms and Conditions */}
-          <div className="flex items-start mt-6">
-            <input
-              type="checkbox"
-              id="terms"
-              className="w-4 h-4 mt-1 text-blue-600"
-              {...register('terms', { required: true })}
-            />
-            <label htmlFor="terms" className="ml-2 text-sm text-gray-700">
-              I agree to the <a href="#" className="text-blue-600 hover:underline">Terms and Conditions</a> and 
-              <a href="#" className="text-blue-600 hover:underline"> Privacy Policy</a>
-            </label>
-            {errors.terms && <p className="text-red-500 text-xs mt-1">You must agree to the terms and conditions</p>}
+          <div className="flex items-start">
+            <div className="flex items-center h-5">
+              <input
+                type="checkbox"
+                className="border-gray-300 rounded-sm focus:ring-blue-500 h-4 w-4 text-blue-600"
+                {...register('terms', { required: 'You must accept the terms and conditions' })}
+              />
+            </div>
+            <div className="ml-3">
+              <label className="text-gray-700 text-sm">
+                I agree to the <a href="#" className="text-blue-600 hover:underline">Terms and Conditions</a> and <a href="#" className="text-blue-600 hover:underline">Privacy Policy</a>
+              </label>
+              {errors.terms && <p className="mt-1 text-red-500 text-sm">{errors.terms.message}</p>}
+            </div>
           </div>
           
-          {/* Submit Button */}
-          <div className="pt-5">
+          {/* Price and Submit */}
+          <div className="flex flex-col md:flex-row items-center justify-between pt-6 border-t border-gray-200">
+            <div className="mb-4 md:mb-0">
+              <span className="text-gray-600">Total Price:</span>
+              <span className="ml-2 font-bold text-2xl text-blue-600">{servicePrice}</span>
+            </div>
+            
             <button
               type="submit"
+              className="btn-primary w-full md:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isProcessing}
-              className={`w-full py-3 px-4 rounded-md text-white font-medium ${isProcessing ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'} transition-colors duration-200`}
             >
               {isProcessing ? (
-                <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                   Processing...
-                </span>
-              ) : 'Book Appointment'}
+                </>
+              ) : (
+                'Book Appointment'
+              )}
             </button>
           </div>
         </form>

@@ -9,6 +9,7 @@ interface BookingClosureContextType {
   reopenBookings: () => void;
   formatClosureTime: () => string | null;
   remainingTime: string | null;
+  isLoading: boolean;
 }
 
 const defaultContext: BookingClosureContextType = {
@@ -17,7 +18,8 @@ const defaultContext: BookingClosureContextType = {
   closeBookings: () => {},
   reopenBookings: () => {},
   formatClosureTime: () => null,
-  remainingTime: null
+  remainingTime: null,
+  isLoading: true
 };
 
 const BookingClosureContext = createContext<BookingClosureContextType>(defaultContext);
@@ -25,29 +27,59 @@ const BookingClosureContext = createContext<BookingClosureContextType>(defaultCo
 export const useBookingClosure = () => useContext(BookingClosureContext);
 
 export const BookingClosureProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isClosed, setIsClosed] = useState(true); // Start with bookings closed by default
+  const [isClosed, setIsClosed] = useState(true); // Default to closed until we check
   const [closureEndTime, setClosureEndTime] = useState<Date | null>(null);
   const [remainingTime, setRemainingTime] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Check local storage on initial load or initialize with default closure
+  // Load booking closure status from API
   useEffect(() => {
-    const storedEndTime = localStorage.getItem('bookingClosureEndTime');
-    if (storedEndTime) {
-      const endTime = new Date(storedEndTime);
-      if (endTime > new Date()) {
-        setClosureEndTime(endTime);
-        setIsClosed(true);
-      } else {
-        // If end time has passed, clear storage
-        localStorage.removeItem('bookingClosureEndTime');
+    async function fetchClosureStatus() {
+      try {
+        const response = await fetch('/api/settings/booking_closure');
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            // Setting not found - initialize with default (closed)
+            const endTime = new Date();
+            endTime.setHours(endTime.getHours() + 24); // Default to 24 hours
+            await updateClosureStatus(true, endTime);
+            setClosureEndTime(endTime);
+            setIsClosed(true);
+          } else {
+            console.error('Error fetching closure status:', await response.text());
+          }
+          setIsLoading(false);
+          return;
+        }
+        
+        const data = await response.json();
+        const closureData = data.booking_closure;
+        
+        if (closureData) {
+          setIsClosed(closureData.isClosed);
+          
+          if (closureData.endTime) {
+            const endTime = new Date(closureData.endTime);
+            
+            if (endTime > new Date()) {
+              setClosureEndTime(endTime);
+            } else if (closureData.isClosed) {
+              // End time passed but status is still closed
+              setIsClosed(true);
+              setClosureEndTime(null);
+              await updateClosureStatus(true, null);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch booking closure status:', error);
+      } finally {
+        setIsLoading(false);
       }
-    } else {
-      // If no stored time exists, set default closure for 24 hours
-      const defaultEndTime = new Date();
-      defaultEndTime.setHours(defaultEndTime.getHours() + 24);
-      setClosureEndTime(defaultEndTime);
-      localStorage.setItem('bookingClosureEndTime', defaultEndTime.toISOString());
     }
+    
+    fetchClosureStatus();
   }, []);
 
   // Update remaining time every minute
@@ -60,7 +92,7 @@ export const BookingClosureProvider: React.FC<{ children: React.ReactNode }> = (
         setIsClosed(false);
         setClosureEndTime(null);
         setRemainingTime(null);
-        localStorage.removeItem('bookingClosureEndTime');
+        updateClosureStatus(false, null);
         return;
       }
       
@@ -86,19 +118,43 @@ export const BookingClosureProvider: React.FC<{ children: React.ReactNode }> = (
     return () => clearInterval(interval);
   }, [closureEndTime]);
 
+  // Update booking closure in API
+  const updateClosureStatus = async (closed: boolean, endTime: Date | null) => {
+    try {
+      const response = await fetch('/api/settings/booking_closure', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          value: {
+            isClosed: closed,
+            endTime: endTime ? endTime.toISOString() : null
+          }
+        }),
+      });
+      
+      if (!response.ok) {
+        console.error('Error updating closure status:', await response.text());
+      }
+    } catch (error) {
+      console.error('Failed to update booking closure status:', error);
+    }
+  };
+
   const closeBookings = (hours: number) => {
     const endTime = new Date();
     endTime.setHours(endTime.getHours() + hours);
     setClosureEndTime(endTime);
     setIsClosed(true);
-    localStorage.setItem('bookingClosureEndTime', endTime.toISOString());
+    updateClosureStatus(true, endTime);
   };
 
   const reopenBookings = () => {
     setIsClosed(false);
     setClosureEndTime(null);
     setRemainingTime(null);
-    localStorage.removeItem('bookingClosureEndTime');
+    updateClosureStatus(false, null);
   };
 
   const formatClosureTime = () => {
@@ -114,7 +170,8 @@ export const BookingClosureProvider: React.FC<{ children: React.ReactNode }> = (
         closeBookings,
         reopenBookings,
         formatClosureTime,
-        remainingTime
+        remainingTime,
+        isLoading
       }}
     >
       {children}

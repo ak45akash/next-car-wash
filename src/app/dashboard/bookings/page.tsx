@@ -1,78 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
-import { FaSearch, FaFilter, FaPlus, FaCalendarTimes, FaClock } from 'react-icons/fa';
+import { FaSearch, FaFilter, FaCalendarTimes, FaClock, FaSpinner } from 'react-icons/fa';
 import { useBookingClosure } from '../../contexts/BookingClosureContext';
 
-// Mock booking data
-const bookings = [
-  {
-    id: 1,
-    customer: 'Rahul Sharma',
-    email: 'rahul.s@example.com',
-    phone: '+91 95555 12345',
-    service: 'Premium Wash',
-    date: '2023-03-18',
-    time: '10:30 AM',
-    status: 'Completed',
-    payment: 'Paid',
-    amount: 899
-  },
-  {
-    id: 2,
-    customer: 'Priya Patel',
-    email: 'priya.p@example.com',
-    phone: '+91 98765 54321',
-    service: 'Interior Detailing',
-    date: '2023-03-18',
-    time: '11:45 AM',
-    status: 'In Progress',
-    payment: 'Paid',
-    amount: 1499
-  },
-  {
-    id: 3,
-    customer: 'Amit Singh',
-    email: 'amit.s@example.com',
-    phone: '+91 87654 32198',
-    service: 'Ceramic Coating',
-    date: '2023-03-18',
-    time: '1:30 PM',
-    status: 'Upcoming',
-    payment: 'Pending',
-    amount: 8999
-  },
-  {
-    id: 4,
-    customer: 'Neha Verma',
-    email: 'neha.v@example.com',
-    phone: '+91 77777 88888',
-    service: 'Express Wash',
-    date: '2023-03-19',
-    time: '9:00 AM',
-    status: 'Upcoming',
-    payment: 'Pending',
-    amount: 499
-  },
-  {
-    id: 5,
-    customer: 'Vikram Malhotra',
-    email: 'vikram.m@example.com',
-    phone: '+91 99999 11111',
-    service: 'Full Detailing',
-    date: '2023-03-19',
-    time: '10:15 AM',
-    status: 'Upcoming',
-    payment: 'Paid',
-    amount: 2999
-  }
-];
+// Define booking type
+interface Booking {
+  id: number;
+  customer_name: string;
+  email: string;
+  phone: string;
+  service: string;
+  date: string;
+  time: string;
+  status: string;
+  payment_status: string;
+  amount: number;
+}
 
 export default function BookingsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [bookingsData, setBookingsData] = useState(bookings);
+  const [bookingsData, setBookingsData] = useState<Booking[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState<number | null>(null);
   
@@ -83,10 +35,35 @@ export default function BookingsPage() {
   // Use the booking closure context
   const { isClosed, remainingTime, closeBookings, reopenBookings } = useBookingClosure();
   
+  // Fetch bookings from API
+  useEffect(() => {
+    async function fetchBookings() {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/bookings');
+        
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        setBookingsData(data);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching bookings:', err);
+        setError('Failed to load bookings. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    fetchBookings();
+  }, []);
+  
   // Filter bookings based on search term and status filter
   const filteredBookings = bookingsData.filter(booking => {
     const matchesSearch = 
-      booking.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      booking.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       booking.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
       booking.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       booking.phone.toLowerCase().includes(searchTerm.toLowerCase());
@@ -104,16 +81,36 @@ export default function BookingsPage() {
     setShowConfirmModal(true);
   };
 
-  const confirmCancelBooking = () => {
+  const confirmCancelBooking = async () => {
     if (bookingToCancel !== null) {
-      const updatedBookings = bookingsData.map(booking => 
-        booking.id === bookingToCancel 
-          ? { ...booking, status: 'Cancelled' } 
-          : booking
-      );
-      setBookingsData(updatedBookings);
-      setShowConfirmModal(false);
-      setBookingToCancel(null);
+      try {
+        const response = await fetch(`/api/bookings/${bookingToCancel}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status: 'Cancelled' }),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status}`);
+        }
+        
+        // Update local state with cancelled booking
+        setBookingsData(prevBookings => 
+          prevBookings.map(booking => 
+            booking.id === bookingToCancel 
+              ? { ...booking, status: 'Cancelled' } 
+              : booking
+          )
+        );
+        
+        setShowConfirmModal(false);
+        setBookingToCancel(null);
+      } catch (err) {
+        console.error('Error cancelling booking:', err);
+        // Show error notification or handle error appropriately
+      }
     }
   };
 
@@ -224,81 +221,98 @@ export default function BookingsPage() {
           </div>
         </div>
         
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Customer
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Service
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date & Time
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Payment
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Amount
-                </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredBookings.map((booking) => (
-                <tr key={booking.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex flex-col">
-                      <div className="text-sm font-medium text-gray-900">{booking.customer}</div>
-                      <div className="text-sm text-gray-500">{booking.email}</div>
-                      <div className="text-sm text-gray-500">{booking.phone}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{booking.service}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{booking.date}</div>
-                    <div className="text-sm text-gray-500">{booking.time}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(booking.status)}`}>
-                      {booking.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getPaymentClass(booking.payment)}`}>
-                      {booking.payment}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ₹{booking.amount.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button className="text-blue-600 hover:text-blue-900 mr-4">Edit</button>
-                    {booking.status.toLowerCase() !== 'cancelled' && (
-                      <button 
-                        className="text-red-600 hover:text-red-900"
-                        onClick={() => handleCancelClick(booking.id)}
-                      >
-                        Cancel
-                      </button>
-                    )}
-                  </td>
+        {isLoading ? (
+          <div className="py-20 text-center">
+            <FaSpinner className="animate-spin h-8 w-8 mx-auto text-blue-500 mb-4" />
+            <p className="text-gray-500">Loading bookings...</p>
+          </div>
+        ) : error ? (
+          <div className="py-20 text-center">
+            <p className="text-red-500">{error}</p>
+            <button 
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md"
+              onClick={() => window.location.reload()}
+            >
+              Retry
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Customer
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Service
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date & Time
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Payment
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Amount
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredBookings.map((booking) => (
+                  <tr key={booking.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex flex-col">
+                        <div className="text-sm font-medium text-gray-900">{booking.customer_name}</div>
+                        <div className="text-sm text-gray-500">{booking.email}</div>
+                        <div className="text-sm text-gray-500">{booking.phone}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{booking.service}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{booking.date}</div>
+                      <div className="text-sm text-gray-500">{booking.time}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(booking.status)}`}>
+                        {booking.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getPaymentClass(booking.payment_status)}`}>
+                        {booking.payment_status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      ₹{booking.amount.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button className="text-blue-600 hover:text-blue-900 mr-4">Edit</button>
+                      {booking.status.toLowerCase() !== 'cancelled' && (
+                        <button 
+                          className="text-red-600 hover:text-red-900"
+                          onClick={() => handleCancelClick(booking.id)}
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
         
-        {filteredBookings.length === 0 && (
+        {!isLoading && !error && filteredBookings.length === 0 && (
           <div className="py-8 text-center">
             <p className="text-gray-500">No bookings found matching your search criteria.</p>
           </div>

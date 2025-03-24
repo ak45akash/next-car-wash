@@ -1,11 +1,20 @@
 'use client';
 
 import React from 'react';
-import { FaCalendarTimes, FaClock } from 'react-icons/fa';
+import { FaCalendarTimes, FaClock, FaSpinner } from 'react-icons/fa';
 import { useBookingClosure } from '../contexts/BookingClosureContext';
 
 export default function BookingClosureNotice() {
-  const { isClosed, remainingTime } = useBookingClosure();
+  const { isClosed, remainingTime, isLoading } = useBookingClosure();
+
+  if (isLoading) {
+    return (
+      <div className="bg-gray-50 border border-gray-200 text-gray-600 px-4 py-3 rounded-md mb-6 flex items-center justify-center">
+        <FaSpinner className="animate-spin mr-2" />
+        <span>Checking booking availability...</span>
+      </div>
+    );
+  }
 
   if (!isClosed) return null;
 
