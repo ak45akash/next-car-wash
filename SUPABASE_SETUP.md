@@ -30,6 +30,12 @@ These will be used as environment variables in your Next.js app.
 3. Copy and paste the contents of `supabase/schema.sql` from this repository
 4. Run the query to set up your database schema and initial data
 
+**Note**: The schema script will:
+- Create tables for bookings, services, settings, and customers
+- Insert initial service options into the services table
+- Set up initial booking closure settings
+- Configure Row Level Security (RLS) policies
+
 ## 4. Configure Authentication (Optional)
 
 If you want to restrict dashboard access:
@@ -66,12 +72,36 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
 Once deployed:
 
-1. Visit your Vercel app URL
+1. Visit your Vercel app URL or run locally with `npm run dev`
 2. Try creating a booking
-3. Check the Supabase Table Editor to see if the booking was created
-4. Check that booking closure functionality works correctly
+3. Check the Supabase Table Editor to see if the booking was created in these tables:
+   - `bookings` - primary booking data
+   - `customers` - new customers are automatically added when bookings are created
+4. Check that booking closure functionality works correctly by toggling it in the admin dashboard
 
-## 7. Additional Configuration
+## 7. Database Schema Details
+
+The application uses the following tables:
+
+### Bookings Table
+- Contains all booking information including customer details, service details, date/time, and status
+- Automatically created when a customer submits a booking form
+
+### Services Table
+- Pre-populated with car washing services
+- Each service has a name, description, duration, price, and category
+- You can manage services from the admin dashboard
+
+### Settings Table
+- Stores application configuration settings
+- Currently used for booking closure functionality
+- Key/value structure allows for easy addition of new settings
+
+### Customers Table
+- Automatically populated when new bookings are created
+- Stores unique customer information for future reference
+
+## 8. Additional Configuration
 
 ### Email Integration (Optional)
 

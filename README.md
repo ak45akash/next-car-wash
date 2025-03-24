@@ -58,13 +58,31 @@ A modern, responsive car wash booking website built with Next.js, Tailwind CSS, 
    yarn dev
    ```
 
+### Database Setup
+
+This application uses Supabase (PostgreSQL) as its database. The schema includes:
+
+- **bookings**: Customer booking information
+- **services**: Available services with pricing
+- **settings**: Application settings (e.g., booking closure)
+- **customers**: Customer information
+
+Follow these steps to set up the database:
+
+1. Create a Supabase project at [supabase.com](https://supabase.com)
+2. Get your project URL and anon key from Project Settings > API
+3. Add these to your `.env.local` file
+4. Run the SQL script in `supabase/schema.sql` from the Supabase SQL Editor
+
+For complete setup instructions, refer to `SUPABASE_SETUP.md`.
+
 ### Deployment
 
 The easiest way to deploy this website is through Vercel:
 
 1. Push your code to a Git repository
 2. Import your project on Vercel
-3. Set environment variables
+3. Set environment variables (Supabase URL and anon key)
 4. Deploy
 
 ## Project Structure
@@ -88,14 +106,16 @@ The easiest way to deploy this website is through Vercel:
 └── ...
 ```
 
-## Database Schema
+## API Routes
 
-- **bookings**: Customer booking information
-- **services**: Available services with pricing
-- **settings**: Application settings (e.g., booking closure)
-- **customers**: Customer information
+The application provides the following API routes:
 
-See `supabase/schema.sql` for the complete database schema.
+- `/api/bookings` - Create and retrieve bookings
+- `/api/bookings/[id]` - Get, update, or delete a specific booking
+- `/api/services` - Get all services or create a new service
+- `/api/services/[id]` - Get, update, or delete a specific service
+- `/api/settings` - Get all settings or create/update settings
+- `/api/settings/[key]` - Get, update, or delete a specific setting
 
 ## Contributing
 
