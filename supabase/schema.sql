@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS services (
   price DECIMAL(10,2) NOT NULL,
   category TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'Active',
+  image_url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -127,4 +128,54 @@ CREATE POLICY "Allow public to read settings" ON settings
 
 -- Allow public to create bookings
 CREATE POLICY "Allow public to create bookings" ON bookings
-  FOR INSERT WITH CHECK (true); 
+  FOR INSERT WITH CHECK (true);
+
+-- Storage configuration for service images
+-- Note: This part needs to be run from the Supabase dashboard or using the Supabase CLI
+-- These are instructions that need to be followed manually:
+
+/*
+## Storage Setup Instructions
+
+1. Create a new storage bucket:
+   - Go to Storage in your Supabase dashboard
+   - Click "Create bucket"
+   - Name: car-images
+   - Set "Public bucket" to ON
+   - Click "Create bucket"
+
+2. Set up bucket policies (can be done through the Supabase dashboard):
+   - Allow public READ access to all files
+   - Restrict WRITE access to authenticated users only
+   - Example policies:
+
+   # Allow public read access
+   CREATE POLICY "Allow public read access for car images"
+   ON storage.objects FOR SELECT
+   USING (bucket_id = 'car-images');
+
+   # Allow authenticated users to upload files
+   CREATE POLICY "Allow authenticated users to upload images"
+   ON storage.objects FOR INSERT
+   WITH CHECK (
+     auth.role() = 'authenticated' AND
+     bucket_id = 'car-images'
+   );
+
+   # Allow users to update and delete their own files
+   CREATE POLICY "Allow users to update their own images"
+   ON storage.objects FOR UPDATE
+   USING (
+     auth.role() = 'authenticated' AND
+     bucket_id = 'car-images' AND
+     (storage.foldername(name))[1] = auth.uid()
+   );
+
+   CREATE POLICY "Allow users to delete their own images"
+   ON storage.objects FOR DELETE
+   USING (
+     auth.role() = 'authenticated' AND
+     bucket_id = 'car-images' AND
+     (storage.foldername(name))[1] = auth.uid()
+   );
+*/ 

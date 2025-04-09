@@ -10,6 +10,7 @@ A modern, responsive car wash booking website built with Next.js, Tailwind CSS, 
 - Admin dashboard for managing bookings and services
 - Real-time booking management with Supabase database
 - Booking closure system for high-demand periods
+- Service image upload and management
 - Email notifications (configurable)
 
 ## Tech Stack
@@ -17,6 +18,7 @@ A modern, responsive car wash booking website built with Next.js, Tailwind CSS, 
 - **Frontend**: Next.js 15, React, Tailwind CSS, Framer Motion
 - **Backend**: Next.js API Routes
 - **Database**: Supabase (PostgreSQL)
+- **Storage**: Supabase Storage
 - **Authentication**: Supabase Auth
 - **Deployment**: Vercel
 
@@ -63,7 +65,7 @@ A modern, responsive car wash booking website built with Next.js, Tailwind CSS, 
 This application uses Supabase (PostgreSQL) as its database. The schema includes:
 
 - **bookings**: Customer booking information
-- **services**: Available services with pricing
+- **services**: Available services with pricing and images
 - **settings**: Application settings (e.g., booking closure)
 - **customers**: Customer information
 
@@ -75,6 +77,14 @@ Follow these steps to set up the database:
 4. Run the SQL script in `supabase/schema.sql` from the Supabase SQL Editor
 
 For complete setup instructions, refer to `SUPABASE_SETUP.md`.
+
+### Storage Setup
+
+This application uses Supabase Storage to store service images:
+
+1. Create a storage bucket named `car-images` in your Supabase dashboard
+2. Configure bucket policies to allow public reading and authenticated writing
+3. See `SUPABASE_SETUP.md` for detailed instructions on setting up storage
 
 ### Deployment
 
@@ -116,6 +126,23 @@ The application provides the following API routes:
 - `/api/services/[id]` - Get, update, or delete a specific service
 - `/api/settings` - Get all settings or create/update settings
 - `/api/settings/[key]` - Get, update, or delete a specific setting
+
+## Key Features
+
+### Service Image Management
+
+The application allows administrators to:
+
+- Upload images for each service (up to 2MB)
+- Preview images before saving
+- Replace existing images
+- Display service images on the booking page and service listings
+
+Images are:
+- Stored in Supabase Storage (car-images bucket)
+- Limited to 2MB in size
+- Automatically given unique filenames
+- Displayed with optimized loading
 
 ## Contributing
 

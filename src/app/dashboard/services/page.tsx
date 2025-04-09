@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import { FaSearch, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
+import { createClient } from '@supabase/supabase-js';
 
 interface Service {
   id: number;
@@ -12,6 +13,7 @@ interface Service {
   price: number;
   category: string;
   status: string;
+  image_url?: string;
 }
 
 interface ServiceFormProps {
@@ -21,6 +23,11 @@ interface ServiceFormProps {
   isEditing?: boolean;
 }
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-supabase-url.supabase.co';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-key';
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
 const ServiceForm: React.FC<ServiceFormProps> = ({ initialData, onSubmit, onCancel, isEditing = false }) => {
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
@@ -28,8 +35,13 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ initialData, onSubmit, onCanc
     duration: initialData?.duration || 30,
     price: initialData?.price || 499,
     category: initialData?.category || 'Basic',
-    status: initialData?.status || 'Active'
+    status: initialData?.status || 'Active',
+    image_url: initialData?.image_url || ''
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(initialData?.image_url || null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -39,9 +51,91 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ initialData, onSubmit, onCanc
     }));
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Please select an image file (JPEG, PNG, etc.)');
+      return;
+    }
+    
+    // Check file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setUploadError('Image must be less than 2MB');
+      return;
+    }
+    
+    setImageFile(file);
+    setUploadError(null);
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    setUploading(true);
+    try {
+      console.log('Uploading image to Supabase storage...');
+      
+      // Create a unique file name
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+      const filePath = `service-images/${fileName}`;
+      
+      // Upload to Supabase
+      const { data, error } = await supabase.storage
+        .from('car-images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+      
+      if (error) {
+        console.error('Supabase storage error:', error);
+        throw error;
+      }
+      
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('car-images')
+        .getPublicUrl(filePath);
+      
+      console.log('Image uploaded successfully, public URL:', publicUrl);
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      setUploadError('Failed to upload image. Please try again.');
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSubmit(formData as Service);
+    
+    let finalFormData = { ...formData };
+    
+    // If there's a new image, upload it first
+    if (imageFile) {
+      setUploading(true);
+      const imageUrl = await uploadImage(imageFile);
+      setUploading(false);
+      
+      if (imageUrl) {
+        finalFormData.image_url = imageUrl;
+      } else {
+        return; // Don't submit if image upload failed
+      }
+    }
+    
+    await onSubmit(finalFormData as Service);
   };
 
   return (
@@ -72,6 +166,65 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ initialData, onSubmit, onCanc
               placeholder="Enter service description"
               required
             />
+          </div>
+          
+          {/* Image Upload Section */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Service Image</label>
+            <div className="mt-1 space-y-4">
+              {/* Image Preview */}
+              {imagePreview && (
+                <div className="relative inline-block">
+                  <img 
+                    src={imagePreview} 
+                    alt="Service preview" 
+                    className="w-48 h-48 object-cover rounded-md border border-gray-300"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setImagePreview(null);
+                      setImageFile(null);
+                      setFormData(prev => ({ ...prev, image_url: '' }));
+                    }}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 focus:outline-none"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+
+              {/* File Input */}
+              <div className="flex flex-col">
+                <label 
+                  htmlFor="file-upload"
+                  className="cursor-pointer inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 max-w-xs"
+                >
+                  <svg className="mr-2 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0l-4 4m4-4v12" />
+                  </svg>
+                  {imagePreview ? 'Change image' : 'Upload image'}
+                </label>
+                <input
+                  id="file-upload"
+                  name="file-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="sr-only"
+                />
+                
+                <p className="mt-2 text-xs text-gray-500">
+                  PNG, JPG, GIF up to 2MB
+                </p>
+                
+                {uploadError && (
+                  <p className="mt-1 text-xs text-red-500">{uploadError}</p>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -150,19 +303,61 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ initialData, onSubmit, onCanc
           type="button"
           onClick={onCancel}
           className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out"
+          disabled={uploading}
         >
           Cancel
         </button>
         <button
           type="submit"
-          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out"
+          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out flex items-center"
+          disabled={uploading}
         >
+          {uploading && (
+            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          )}
           {isEditing ? 'Update Service' : 'Add Service'}
         </button>
       </div>
     </form>
   );
 };
+
+async function uploadImage(file: File) {
+  try {
+    console.log('Uploading image to Supabase storage bucket: car-images');
+    
+    // Create a unique file name
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+    const filePath = `service-images/${fileName}`;
+    
+    const { data, error } = await supabase.storage
+      .from('car-images')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) {
+      console.error('Error uploading image:', error);
+      return null;
+    }
+
+    // Get the public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('car-images')
+      .getPublicUrl(filePath);
+      
+    console.log('Image uploaded successfully, URL:', publicUrl);
+    return publicUrl;
+  } catch (err) {
+    console.error('Unexpected error during image upload:', err);
+    return null;
+  }
+}
 
 export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([]);
@@ -238,12 +433,22 @@ export default function ServicesPage() {
     if (!currentService) return;
     
     try {
+      console.log('Updating service with data:', formData);
+
       const response = await fetch(`/api/services/${currentService.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          name: formData.name,
+          description: formData.description,
+          duration: formData.duration,
+          price: formData.price,
+          category: formData.category,
+          status: formData.status,
+          image_url: formData.image_url
+        }),
       });
 
       if (!response.ok) {
@@ -252,6 +457,8 @@ export default function ServicesPage() {
       }
 
       const updatedService = await response.json();
+      console.log('Service updated successfully:', updatedService);
+      
       setServices(prev => prev.map(service => 
         service.id === updatedService.id ? updatedService : service
       ));
@@ -310,7 +517,7 @@ export default function ServicesPage() {
   });
 
   return (
-    <DashboardLayout>
+    <DashboardLayout adminOnly={true}>
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
@@ -447,8 +654,27 @@ export default function ServicesPage() {
                 {filteredServices.map((service) => (
                   <tr key={service.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{service.name}</div>
-                      <div className="text-sm text-gray-500">{service.description}</div>
+                      <div className="flex items-center">
+                        {service.image_url ? (
+                          <div className="h-16 w-16 flex-shrink-0 mr-4">
+                            <img 
+                              className="h-16 w-16 rounded-md object-cover" 
+                              src={service.image_url} 
+                              alt={service.name} 
+                            />
+                          </div>
+                        ) : (
+                          <div className="h-16 w-16 rounded-md bg-gray-100 flex items-center justify-center mr-4">
+                            <svg className="h-8 w-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                        )}
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{service.name}</div>
+                          <div className="text-sm text-gray-500">{service.description}</div>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{service.duration} mins</div>

@@ -36,7 +36,56 @@ These will be used as environment variables in your Next.js app.
 - Set up initial booking closure settings
 - Configure Row Level Security (RLS) policies
 
-## 4. Configure Authentication (Optional)
+## 4. Set Up Storage for Service Images
+
+### Create a new storage bucket
+
+1. In your Supabase dashboard, go to the Storage section
+2. Click "Create new bucket"
+3. Enter the bucket name: `car-images`
+4. Check "Public bucket" to enable public access to files
+5. Click "Create bucket"
+
+### Configure storage bucket policies
+
+Once the bucket is created, you need to set up access policies:
+
+1. In the bucket settings, go to the "Policies" tab
+2. Create the following policies:
+
+#### Allow public read access to images
+- Click "New Policy"
+- For Policy Type: Select "Select (Read)"
+- Policy Name: `Allow public read access for car images`
+- Policy Definition: Select "Using custom check"
+- Policy: `true` (This allows everyone to read the files)
+- Click "Save Policy"
+
+#### Allow authenticated users to upload images
+- Click "New Policy"
+- For Policy Type: Select "Insert (Create)"
+- Policy Name: `Allow authenticated users to upload images`
+- Policy Definition: Select "Using custom check"
+- Policy: `auth.role() = 'authenticated'`
+- Click "Save Policy"
+
+#### Allow users to update their images
+- Click "New Policy"
+- For Policy Type: Select "Update"
+- Policy Name: `Allow users to update their images`
+- Policy Definition: Select "Using custom check"
+- Policy: `auth.role() = 'authenticated'`
+- Click "Save Policy"
+
+#### Allow users to delete their images
+- Click "New Policy"
+- For Policy Type: Select "Delete"
+- Policy Name: `Allow users to delete their images`
+- Policy Definition: Select "Using custom check"
+- Policy: `auth.role() = 'authenticated'`
+- Click "Save Policy"
+
+## 5. Configure Authentication (Optional)
 
 If you want to restrict dashboard access:
 
@@ -45,7 +94,7 @@ If you want to restrict dashboard access:
 3. Configure any additional providers you want (Google, GitHub, etc.)
 4. Set up email templates for password recovery
 
-## 5. Configure Your Next.js App
+## 6. Configure Your Next.js App
 
 ### Add Environment Variables
 
@@ -68,7 +117,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
    - Environment Variables: Add the Supabase URL and anon key
 6. Click "Deploy"
 
-## 6. Test Your Application
+## 7. Test Your Application
 
 Once deployed:
 
@@ -78,8 +127,9 @@ Once deployed:
    - `bookings` - primary booking data
    - `customers` - new customers are automatically added when bookings are created
 4. Check that booking closure functionality works correctly by toggling it in the admin dashboard
+5. Test image upload functionality by creating or editing a service in the admin dashboard
 
-## 7. Database Schema Details
+## 8. Database Schema Details
 
 The application uses the following tables:
 
@@ -89,7 +139,7 @@ The application uses the following tables:
 
 ### Services Table
 - Pre-populated with car washing services
-- Each service has a name, description, duration, price, and category
+- Each service has a name, description, duration, price, category, status, and image_url
 - You can manage services from the admin dashboard
 
 ### Settings Table
@@ -101,23 +151,16 @@ The application uses the following tables:
 - Automatically populated when new bookings are created
 - Stores unique customer information for future reference
 
-## 8. Additional Configuration
+## 9. Storage Usage
 
-### Email Integration (Optional)
+The application uses Supabase Storage to store service images:
 
-To enable email notifications for bookings:
-
-1. Set up a service like SendGrid, Mailgun, or AWS SES
-2. Create Supabase Edge Functions to handle email sending
-3. Set up triggers on the bookings table
-
-### Storage Setup (Optional)
-
-If you need to store images (like car photos):
-
-1. Go to Storage in your Supabase dashboard
-2. Create a new bucket called "car-images"
-3. Set up appropriate access policies
+- Images are stored in the `car-images` bucket
+- Service images are stored in the `service-images/` folder within the bucket
+- Uploaded images are given unique names to prevent conflicts
+- Public URLs for images are stored in the `image_url` field of the services table
+- The maximum file size for uploads is 2MB
+- Supported file types are common image formats (JPEG, PNG, GIF, etc.)
 
 ## Troubleshooting
 
@@ -127,5 +170,6 @@ If you encounter issues:
 2. Verify environment variables are set correctly
 3. Check browser console for errors
 4. Ensure your API routes are correctly formatted
+5. For storage issues, check the Storage > Logs section in your Supabase dashboard
 
 Need help? Contact support at [your-support-email]. 
