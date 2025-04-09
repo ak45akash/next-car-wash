@@ -27,13 +27,24 @@ export async function getBookings() {
 }
 
 export async function getServices() {
-  const { data, error } = await supabase
-    .from('services')
-    .select('*')
-    .order('category', { ascending: true });
-  
-  if (error) throw error;
-  return data;
+  try {
+    console.log('Fetching services from Supabase...');
+    const { data, error } = await supabase
+      .from('services')
+      .select('*')
+      .order('category', { ascending: true });
+    
+    if (error) {
+      console.error('Supabase error in getServices:', error);
+      throw error;
+    }
+    
+    console.log('Services fetched successfully:', data);
+    return data;
+  } catch (err) {
+    console.error('Error in getServices:', err);
+    throw err;
+  }
 }
 
 export async function getSettings(key: string) {

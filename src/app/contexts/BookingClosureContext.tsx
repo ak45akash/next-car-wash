@@ -27,7 +27,7 @@ const BookingClosureContext = createContext<BookingClosureContextType>(defaultCo
 export const useBookingClosure = () => useContext(BookingClosureContext);
 
 export const BookingClosureProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isClosed, setIsClosed] = useState(true); // Default to closed until we check
+  const [isClosed, setIsClosed] = useState(false); // Default to open until we check
   const [closureEndTime, setClosureEndTime] = useState<Date | null>(null);
   const [remainingTime, setRemainingTime] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,12 +40,10 @@ export const BookingClosureProvider: React.FC<{ children: React.ReactNode }> = (
         
         if (!response.ok) {
           if (response.status === 404) {
-            // Setting not found - initialize with default (closed)
-            const endTime = new Date();
-            endTime.setHours(endTime.getHours() + 24); // Default to 24 hours
-            await updateClosureStatus(true, endTime);
-            setClosureEndTime(endTime);
-            setIsClosed(true);
+            // Setting not found - initialize with default (open)
+            await updateClosureStatus(false, null);
+            setClosureEndTime(null);
+            setIsClosed(false);
           } else {
             console.error('Error fetching closure status:', await response.text());
           }
@@ -54,10 +52,13 @@ export const BookingClosureProvider: React.FC<{ children: React.ReactNode }> = (
         }
         
         const data = await response.json();
-        const closureData = data.booking_closure;
+        console.log("Booking closure data:", data);
+        
+        // Check if the data is in the new format (direct object) or old format (nested in value)
+        const closureData = data.value || data;
         
         if (closureData) {
-          setIsClosed(closureData.isClosed);
+          setIsClosed(!!closureData.isClosed);
           
           if (closureData.endTime) {
             const endTime = new Date(closureData.endTime);

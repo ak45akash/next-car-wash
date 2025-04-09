@@ -60,7 +60,7 @@ INSERT INTO services (name, description, duration, price, category) VALUES
 
 -- Insert booking closure setting with default value
 INSERT INTO settings (key, value) 
-VALUES ('booking_closure', '{"isClosed": true, "endTime": null}')
+VALUES ('booking_closure', '{"isClosed": false, "endTime": null}')
 ON CONFLICT (key) DO NOTHING;
 
 -- Create policies for security

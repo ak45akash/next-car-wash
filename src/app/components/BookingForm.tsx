@@ -391,7 +391,7 @@ const BookingForm = () => {
                 <input
                   type="text"
                   className={`w-full px-3 py-2 rounded-md border ${errors.upiId ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  placeholder="your-upi-id@bank"
+                  placeholder="ak45.akashdeep@okhdfcbank"
                   {...register('upiId', { 
                     required: paymentMethod === 'upi' ? 'UPI ID is required' : false,
                     pattern: {
@@ -401,6 +401,7 @@ const BookingForm = () => {
                   })}
                 />
                 {errors.upiId && <p className="mt-1 text-red-500 text-sm">{errors.upiId.message}</p>}
+                <p className="mt-1 text-sm text-gray-600">Please use UPI ID: ak45.akashdeep@okhdfcbank</p>
               </div>
             )}
           </div>

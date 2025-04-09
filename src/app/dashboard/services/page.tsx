@@ -207,6 +207,8 @@ export default function ServicesPage() {
   // Add a new service
   const handleAddService = async (formData: Service) => {
     try {
+      console.log('Submitting new service:', formData);
+      
       const response = await fetch('/api/services', {
         method: 'POST',
         headers: {
@@ -215,16 +217,19 @@ export default function ServicesPage() {
         body: JSON.stringify(formData),
       });
 
+      const responseData = await response.json();
+      
       if (!response.ok) {
-        throw new Error('Failed to add service');
+        console.error('Failed to add service:', responseData);
+        throw new Error(responseData.error || 'Failed to add service');
       }
 
-      const newService = await response.json();
-      setServices(prev => [...prev, newService]);
+      console.log('Service added successfully:', responseData);
+      setServices(prev => [...prev, responseData]);
       setIsAddModalOpen(false);
     } catch (err) {
-      console.error('Error adding service:', err);
-      setError('Failed to add service. Please try again.');
+      console.error('Error in handleAddService:', err);
+      setError(err instanceof Error ? err.message : 'Failed to add service. Please try again.');
     }
   };
 
