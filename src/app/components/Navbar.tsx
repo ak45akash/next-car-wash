@@ -21,10 +21,12 @@ export default function Navbar() {
         <Link href="/" className="flex items-center">
           <div className="relative h-12 w-12 mr-3">
             <Image
-              src="/images/logo.png"
+              src="/logo.png"
               alt="Diamond Steam Car Wash Logo"
               fill
+              sizes="48px"
               className="object-contain"
+              priority
             />
           </div>
           <div>

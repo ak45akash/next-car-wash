@@ -3,7 +3,10 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import { FaSearch, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
+import { useAuth } from '@/app/contexts/AuthContext';
 
 interface Service {
   id: number;
@@ -22,11 +25,6 @@ interface ServiceFormProps {
   onCancel: () => void;
   isEditing?: boolean;
 }
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-supabase-url.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-key';
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const ServiceForm: React.FC<ServiceFormProps> = ({ initialData, onSubmit, onCancel, isEditing = false }) => {
   const [formData, setFormData] = useState({
@@ -78,40 +76,34 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ initialData, onSubmit, onCanc
     reader.readAsDataURL(file);
   };
 
-  const uploadImage = async (file: File): Promise<string | null> => {
-    setUploading(true);
+  const uploadImage = async (file: File): Promise<string> => {
     try {
-      console.log('Uploading image to Supabase storage...');
+      setUploading(true);
+      console.log('Uploading image:', file.name);
       
-      // Create a unique file name
+      if (!supabase) {
+        throw new Error('Supabase client not initialized');
+      }
+
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-      const filePath = `service-images/${fileName}`;
-      
-      // Upload to Supabase
-      const { data, error } = await supabase.storage
-        .from('car-images')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-      
-      if (error) {
-        console.error('Supabase storage error:', error);
-        throw error;
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('services')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw uploadError;
       }
       
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('car-images')
-        .getPublicUrl(filePath);
-      
-      console.log('Image uploaded successfully, public URL:', publicUrl);
-      return publicUrl;
+      const { data } = supabase.storage.from('services').getPublicUrl(filePath);
+      console.log('Image uploaded successfully:', data.publicUrl);
+      return data.publicUrl;
     } catch (error) {
       console.error('Error uploading image:', error);
-      setUploadError('Failed to upload image. Please try again.');
-      return null;
+      toast.error('Error uploading image. Please try again.');
+      throw error;
     } finally {
       setUploading(false);
     }
@@ -325,50 +317,20 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ initialData, onSubmit, onCanc
   );
 };
 
-async function uploadImage(file: File) {
-  try {
-    console.log('Uploading image to Supabase storage bucket: car-images');
-    
-    // Create a unique file name
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-    const filePath = `service-images/${fileName}`;
-    
-    const { data, error } = await supabase.storage
-      .from('car-images')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false
-      });
-
-    if (error) {
-      console.error('Error uploading image:', error);
-      return null;
-    }
-
-    // Get the public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('car-images')
-      .getPublicUrl(filePath);
-      
-    console.log('Image uploaded successfully, URL:', publicUrl);
-    return publicUrl;
-  } catch (err) {
-    console.error('Unexpected error during image upload:', err);
-    return null;
-  }
-}
-
 export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [currentService, setCurrentService] = useState<Service | null>(null);
+  const router = useRouter();
+  const [submitting, setSubmitting] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   // Fetch services from API
   useEffect(() => {
@@ -376,7 +338,25 @@ export default function ServicesPage() {
       try {
         console.log('Fetching services...');
         setLoading(true);
-        const response = await fetch('/api/services');
+        
+        if (!user) {
+          console.log('No user found, redirecting to login');
+          router.push('/login');
+          return;
+        }
+
+        const response = await fetch('/api/services', {
+          headers: {
+            'Cache-Control': 'no-store'
+          }
+        });
+        
+        // Handle potential authentication issues
+        if (response.status === 401 || response.status === 403) {
+          console.log('Authentication issue detected, redirecting to login');
+          router.push('/login');
+          return;
+        }
         
         if (!response.ok) {
           const errorData = await response.json();
@@ -397,7 +377,7 @@ export default function ServicesPage() {
     }
 
     fetchServices();
-  }, []);
+  }, [router, user]);
 
   // Add a new service
   const handleAddService = async (formData: Service) => {
@@ -428,27 +408,27 @@ export default function ServicesPage() {
     }
   };
 
+  // Reset form function
+  const resetForm = () => {
+    setCurrentService(null);
+  };
+
   // Update a service
-  const handleUpdateService = async (formData: Service) => {
+  const handleUpdateService = async (service: Service) => {
     if (!currentService) return;
     
     try {
-      console.log('Updating service with data:', formData);
-
+      setSubmitting(true);
+      setUpdateError(null);
+      
+      console.log('Updating service:', service);
+      
       const response = await fetch(`/api/services/${currentService.id}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name: formData.name,
-          description: formData.description,
-          duration: formData.duration,
-          price: formData.price,
-          category: formData.category,
-          status: formData.status,
-          image_url: formData.image_url
-        }),
+        body: JSON.stringify(service),
       });
 
       if (!response.ok) {
@@ -456,16 +436,23 @@ export default function ServicesPage() {
         throw new Error(errorData.error || 'Failed to update service');
       }
 
-      const updatedService = await response.json();
-      console.log('Service updated successfully:', updatedService);
+      const updatedServiceData = await response.json();
+      console.log('Service updated:', updatedServiceData);
       
-      setServices(prev => prev.map(service => 
-        service.id === updatedService.id ? updatedService : service
+      // Update the services list with the updated service
+      setServices(services.map(s => 
+        s.id === currentService.id ? updatedServiceData : s
       ));
+      
       setIsEditModalOpen(false);
-    } catch (err) {
-      console.error('Error updating service:', err);
-      setError(`Failed to update service: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      toast.success('Service updated successfully!');
+      resetForm();
+    } catch (error) {
+      console.error('Error updating service:', error);
+      setUpdateError(error instanceof Error ? error.message : 'Failed to update service');
+      toast.error(error instanceof Error ? error.message : 'Failed to update service');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -517,7 +504,7 @@ export default function ServicesPage() {
   });
 
   return (
-    <DashboardLayout adminOnly={true}>
+    <DashboardLayout adminOnly={false}>
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">

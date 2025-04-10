@@ -56,9 +56,20 @@ export async function PATCH(
     const numericId = parseInt(id, 10);
     console.log('Numeric ID:', numericId);
     
+    // Explicitly structure the data to ensure proper handling of all fields
+    const updateData = {
+      name: updates.name,
+      description: updates.description,
+      duration: updates.duration,
+      price: updates.price,
+      category: updates.category,
+      status: updates.status,
+      image_url: updates.image_url || null // Handle the image URL
+    };
+    
     const { data, error } = await supabase
       .from('services')
-      .update(updates)
+      .update(updateData)
       .eq('id', numericId)
       .select();
     

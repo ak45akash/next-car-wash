@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
 import { useSupabase } from '../contexts/SupabaseContext';
 
@@ -11,14 +12,26 @@ export default function ProtectedRoute({
   children: React.ReactNode;
   adminOnly?: boolean;
 }) {
+  const router = useRouter();
   const { user, loading, isAdmin } = useAuth();
   const { supabase, isInitialized } = useSupabase();
   const [checkedAuth, setCheckedAuth] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [redirectInProgress, setRedirectInProgress] = useState(false);
+
+  const redirect = useCallback((path: string) => {
+    if (redirectInProgress) return;
+    
+    setRedirectInProgress(true);
+    console.log(`Redirecting to ${path}...`);
+    
+    // Use router instead of window.location for Next.js navigation
+    router.push(path);
+  }, [redirectInProgress, router]);
 
   useEffect(() => {
     // Only run this effect once and only if necessary
-    if (!loading && isInitialized && !checkedAuth) {
+    if (!loading && isInitialized && !checkedAuth && !redirectInProgress) {
       const checkAuth = async () => {
         try {
           // If user exists in context and we're not checking for admin, we're good
@@ -41,21 +54,34 @@ export default function ProtectedRoute({
           
           if (!data.session) {
             console.log('No active session, redirecting to login');
-            window.location.href = '/login';
+            redirect('/login');
             return;
           }
           
           if (adminOnly) {
             // Check if user is admin
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('role')
-              .eq('id', data.session.user.id)
-              .single();
+            try {
+              const { data: profileData, error: profileError } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', data.session.user.id)
+                .single();
               
-            if (profileData?.role !== 'admin') {
-              console.log('User is not admin, redirecting to home');
-              window.location.href = '/';
+              if (profileError) {
+                console.error('Error fetching user role:', profileError);
+                // Default to not admin on error
+                redirect('/dashboard');
+                return;
+              }
+                
+              if (profileData?.role !== 'admin') {
+                console.log('User is not admin, redirecting to dashboard');
+                redirect('/dashboard');
+                return;
+              }
+            } catch (roleErr) {
+              console.error('Error checking admin role:', roleErr);
+              redirect('/dashboard');
               return;
             }
           }
@@ -71,7 +97,7 @@ export default function ProtectedRoute({
       
       checkAuth();
     }
-  }, [user, loading, isAdmin, adminOnly, checkedAuth, supabase, isInitialized]);
+  }, [user, loading, isAdmin, adminOnly, checkedAuth, supabase, isInitialized, redirect, redirectInProgress]);
 
   // Show loading spinner while checking auth
   if (loading || !isInitialized || !checkedAuth) {
@@ -99,12 +125,12 @@ export default function ProtectedRoute({
                 <p>{error}</p>
               </div>
               <div className="mt-4">
-                <a 
-                  href="/login" 
+                <button 
+                  onClick={() => redirect('/login')} 
                   className="text-sm font-medium text-red-600 hover:text-red-500"
                 >
                   Return to Login
-                </a>
+                </button>
               </div>
             </div>
           </div>

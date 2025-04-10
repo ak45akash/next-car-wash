@@ -20,6 +20,7 @@ export default function AboutPage() {
             alt="About Diamond Steam Car Wash"
             fill
             priority
+            sizes="100vw"
             className="object-cover brightness-[0.6] scale-110 transition-transform duration-10000 animate-subtle-zoom"
             style={{
               objectPosition: "center 30%"
@@ -102,6 +103,7 @@ export default function AboutPage() {
                 src="/images/dry-clean.jpg"
                 alt="Professional car detailing"
                 fill
+                sizes="(max-width: 1024px) 100vw, 50vw"
                 className="object-cover hover:scale-105 transition-transform duration-700"
               />
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6 text-white">
@@ -198,6 +200,7 @@ export default function AboutPage() {
                   src="/images/facility-1.jpg"
                   alt="Advanced Washing Equipment"
                   fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -221,6 +224,7 @@ export default function AboutPage() {
                   src="/images/detailing.jpg"
                   alt="Detailing Studio"
                   fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -244,6 +248,7 @@ export default function AboutPage() {
                   src="/images/facility-3.jpg"
                   alt="Customer Lounge"
                   fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -265,6 +270,7 @@ export default function AboutPage() {
             src="/images/detailing.jpg"
             alt="Background"
             fill
+            sizes="100vw"
             className="object-cover"
           />
         </div>
