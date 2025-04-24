@@ -19,6 +19,22 @@ export default function ProtectedRoute({
   const [error, setError] = useState<string | null>(null);
   const [redirectInProgress, setRedirectInProgress] = useState(false);
 
+  // Add debugging info
+  console.log('ProtectedRoute - Initial state:', { 
+    userExists: !!user, 
+    loading, 
+    isAdmin, 
+    supabaseInitialized: isInitialized,
+    checkedAuth, 
+    error,
+    redirectInProgress,
+    environmentInfo: {
+      isProduction: process.env.NODE_ENV === 'production',
+      isVercel: !!process.env.VERCEL,
+      baseUrl: typeof window !== 'undefined' ? window.location.origin : 'server-side'
+    }
+  });
+
   const redirect = useCallback((path: string) => {
     if (redirectInProgress) return;
     
@@ -34,6 +50,12 @@ export default function ProtectedRoute({
     if (!loading && isInitialized && !checkedAuth && !redirectInProgress) {
       const checkAuth = async () => {
         try {
+          console.log('ProtectedRoute - Checking auth:', { 
+            userExists: !!user, 
+            adminOnly, 
+            isAdmin 
+          });
+          
           // If user exists in context and we're not checking for admin, we're good
           if (user && (!adminOnly || isAdmin)) {
             console.log('User authenticated from context');
@@ -51,6 +73,13 @@ export default function ProtectedRoute({
           
           // Otherwise double-check with Supabase directly
           const { data } = await supabase.auth.getSession();
+          console.log('ProtectedRoute - Session check result:', { 
+            hasSession: !!data.session,
+            sessionData: data.session ? { 
+              userId: data.session.user.id,
+              email: data.session.user.email
+            } : null
+          });
           
           if (!data.session) {
             console.log('No active session, redirecting to login');
@@ -66,6 +95,12 @@ export default function ProtectedRoute({
                 .select('role')
                 .eq('id', data.session.user.id)
                 .single();
+              
+              console.log('ProtectedRoute - Admin check:', { 
+                profileData, 
+                hasError: !!profileError,
+                errorMessage: profileError?.message 
+              });
               
               if (profileError) {
                 console.error('Error fetching user role:', profileError);
