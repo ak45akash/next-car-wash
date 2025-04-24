@@ -7,6 +7,13 @@ const nextConfig = {
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
+  output: 'standalone',
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '4mb',
+    },
+  },
+  excludeDefaultMomentLocales: true,
 };
 
 module.exports = nextConfig;
