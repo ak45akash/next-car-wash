@@ -9,8 +9,9 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useSupabase } from '../contexts/SupabaseContext';
 
-// Add this to fix the 404 issue on Vercel
-export const dynamic = 'force-dynamic';
+// Remove dynamic exports
+// const dynamic = 'force-dynamic';
+// const fetchCache = 'force-no-store';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -22,10 +23,14 @@ const LoginPage = () => {
   const { supabase, isInitialized, error: supabaseError } = useSupabase();
   const router = useRouter();
 
-  // If already authenticated, redirect to dashboard
+  // Modify redirect behavior to avoid loops
   useEffect(() => {
     if (user && !loading) {
-      router.push('/dashboard');
+      console.log('User already logged in, will redirect to dashboard');
+      // Check if we're not already on the dashboard
+      if (typeof window !== 'undefined' && window.location.pathname !== '/dashboard') {
+        router.push('/dashboard');
+      }
     }
   }, [user, loading, router]);
 

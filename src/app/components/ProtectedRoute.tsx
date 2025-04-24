@@ -25,17 +25,17 @@ export default function ProtectedRoute({
     loading, 
     isAdmin, 
     supabaseInitialized: isInitialized,
-    checkedAuth, 
-    error,
-    redirectInProgress,
-    environmentInfo: {
-      isProduction: process.env.NODE_ENV === 'production',
-      isVercel: !!process.env.VERCEL,
-      baseUrl: typeof window !== 'undefined' ? window.location.origin : 'server-side'
-    }
+    checkedAuth,
+    pathname: typeof window !== 'undefined' ? window.location.pathname : 'server-side',
   });
 
   const redirect = useCallback((path: string) => {
+    // Avoid redirecting if already at the destination
+    if (typeof window !== 'undefined' && window.location.pathname === path) {
+      console.log(`Already at ${path}, skipping redirect`);
+      return;
+    }
+    
     if (redirectInProgress) return;
     
     setRedirectInProgress(true);
@@ -46,15 +46,23 @@ export default function ProtectedRoute({
   }, [redirectInProgress, router]);
 
   useEffect(() => {
-    // Only run this effect once and only if necessary
-    if (!loading && isInitialized && !checkedAuth && !redirectInProgress) {
+    if (redirectInProgress) {
+      // Reset redirect state after 2 seconds to avoid getting stuck
+      const timer = setTimeout(() => {
+        setRedirectInProgress(false);
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [redirectInProgress]);
+
+  useEffect(() => {
+    // Simplify auth check
+    if (!loading && !checkedAuth && !redirectInProgress) {
       const checkAuth = async () => {
         try {
-          console.log('ProtectedRoute - Checking auth:', { 
-            userExists: !!user, 
-            adminOnly, 
-            isAdmin 
-          });
+          console.log('ProtectedRoute - Current URL path:', 
+            typeof window !== 'undefined' ? window.location.pathname : 'server-side');
           
           // If user exists in context and we're not checking for admin, we're good
           if (user && (!adminOnly || isAdmin)) {
@@ -63,79 +71,28 @@ export default function ProtectedRoute({
             return;
           }
           
-          // If Supabase client is not available, we can't check authentication
-          if (!supabase) {
-            console.error('Supabase client not available for authentication check');
-            setError('Authentication service is not available. Please check your environment variables.');
-            setCheckedAuth(true);
-            return;
-          }
-          
-          // Otherwise double-check with Supabase directly
-          const { data } = await supabase.auth.getSession();
-          console.log('ProtectedRoute - Session check result:', { 
-            hasSession: !!data.session,
-            sessionData: data.session ? { 
-              userId: data.session.user.id,
-              email: data.session.user.email
-            } : null
-          });
-          
-          if (!data.session) {
-            console.log('No active session, redirecting to login');
+          // Simplify this to avoid potential loops
+          if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+            // Only redirect if not already on login page
+            console.log('No user in context, redirecting to login');
             redirect('/login');
             return;
-          }
-          
-          if (adminOnly) {
-            // Check if user is admin
-            try {
-              const { data: profileData, error: profileError } = await supabase
-                .from('profiles')
-                .select('role')
-                .eq('id', data.session.user.id)
-                .single();
-              
-              console.log('ProtectedRoute - Admin check:', { 
-                profileData, 
-                hasError: !!profileError,
-                errorMessage: profileError?.message 
-              });
-              
-              if (profileError) {
-                console.error('Error fetching user role:', profileError);
-                // Default to not admin on error
-                redirect('/dashboard');
-                return;
-              }
-                
-              if (profileData?.role !== 'admin') {
-                console.log('User is not admin, redirecting to dashboard');
-                redirect('/dashboard');
-                return;
-              }
-            } catch (roleErr) {
-              console.error('Error checking admin role:', roleErr);
-              redirect('/dashboard');
-              return;
-            }
           }
           
           setCheckedAuth(true);
         } catch (error) {
           console.error('Error checking authentication:', error);
-          setError('Failed to verify your authentication. Please try logging in again.');
-          // Avoid redirect loop by setting checked
+          setError('Authentication error occurred');
           setCheckedAuth(true);
         }
       };
       
       checkAuth();
     }
-  }, [user, loading, isAdmin, adminOnly, checkedAuth, supabase, isInitialized, redirect, redirectInProgress]);
+  }, [user, loading, isAdmin, adminOnly, checkedAuth, redirect, redirectInProgress]);
 
   // Show loading spinner while checking auth
-  if (loading || !isInitialized || !checkedAuth) {
+  if (loading || !checkedAuth) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -160,12 +117,12 @@ export default function ProtectedRoute({
                 <p>{error}</p>
               </div>
               <div className="mt-4">
-                <button 
-                  onClick={() => redirect('/login')} 
+                <a 
+                  href="/login" 
                   className="text-sm font-medium text-red-600 hover:text-red-500"
                 >
                   Return to Login
-                </button>
+                </a>
               </div>
             </div>
           </div>

@@ -13,7 +13,8 @@ const nextConfig = {
       bodySizeLimit: '4mb',
     },
   },
-  excludeDefaultMomentLocales: true,
+  trailingSlash: false,
+  pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
 };
 
 module.exports = nextConfig;
