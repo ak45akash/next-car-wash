@@ -1,0 +1,31 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/dashboard(/?.*)",
+      "dest": "/dashboard"
+    },
+    {
+      "src": "/login",
+      "dest": "/login"
+    },
+    {
+      "src": "/signup",
+      "dest": "/signup"
+    },
+    {
+      "src": "/forgot-password",
+      "dest": "/forgot-password"
+    },
+    {
+      "src": "/reset-password",
+      "dest": "/reset-password"
+    }
+  ]
+} 

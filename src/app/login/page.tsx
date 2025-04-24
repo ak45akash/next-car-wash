@@ -9,10 +9,6 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useSupabase } from '../contexts/SupabaseContext';
 
-// Remove dynamic exports
-// const dynamic = 'force-dynamic';
-// const fetchCache = 'force-no-store';
-
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
