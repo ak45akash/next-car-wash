@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import DashboardLayout from './components/DashboardLayout';
 import DashboardCard from './components/DashboardCard';
 import { FaCar, FaClock, FaUserFriends, FaDollarSign } from 'react-icons/fa';
-import ProtectedRoute from '../components/ProtectedRoute';
+// import ProtectedRoute from '../components/ProtectedRoute';
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -28,7 +28,7 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <ProtectedRoute>
+    // <ProtectedRoute>
       <DashboardLayout>
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
@@ -188,6 +188,6 @@ export default function Dashboard() {
           </div>
         </div>
       </DashboardLayout>
-    </ProtectedRoute>
+    // </ProtectedRoute>
   );
 } 
