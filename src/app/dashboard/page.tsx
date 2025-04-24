@@ -6,6 +6,9 @@ import DashboardCard from './components/DashboardCard';
 import { FaCar, FaClock, FaUserFriends, FaDollarSign } from 'react-icons/fa';
 import ProtectedRoute from '../components/ProtectedRoute';
 
+// Add this to fix the 404 issue on Vercel
+export const dynamic = 'force-dynamic';
+
 export default function Dashboard() {
   const [stats, setStats] = useState({
     todayBookings: 0,

@@ -5,6 +5,11 @@ import { siteMetadata } from './constants';
 import { BookingClosureProvider } from './contexts/BookingClosureContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { SupabaseProvider } from './contexts/SupabaseContext';
+// Import dynamic configuration
+import { dynamic, dynamicParams, revalidate } from './config';
+
+// Export config for the entire app
+export { dynamic, dynamicParams, revalidate };
 
 const inter = Inter({ subsets: ["latin"] });
 

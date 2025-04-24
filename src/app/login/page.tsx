@@ -9,6 +9,9 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useSupabase } from '../contexts/SupabaseContext';
 
+// Add this to fix the 404 issue on Vercel
+export const dynamic = 'force-dynamic';
+
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
