@@ -22,14 +22,15 @@ CREATE TABLE IF NOT EXISTS bookings (
 -- Services table
 CREATE TABLE IF NOT EXISTS services (
   id SERIAL PRIMARY KEY,
-  name TEXT NOT NULL,
+  name VARCHAR(255) NOT NULL,
   description TEXT,
   duration INTEGER NOT NULL,
   price DECIMAL(10,2) NOT NULL,
-  category TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'Active',
+  category VARCHAR(50) NOT NULL,
+  status VARCHAR(20) DEFAULT 'Active',
   image_url TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Settings table (for booking closure and other app settings)
