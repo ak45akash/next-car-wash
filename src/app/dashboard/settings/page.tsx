@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { FaUserCog, FaUserPlus, FaTrash, FaEdit } from 'react-icons/fa';
 import DashboardLayout from '../components/DashboardLayout';
-import { supabase } from '@/app/contexts/AuthContext';
+import { useSupabase } from '@/app/contexts/SupabaseContext';
 
 interface UserProfile {
   id: string;
@@ -13,6 +13,7 @@ interface UserProfile {
 }
 
 export default function SettingsPage() {
+  const { supabase } = useSupabase();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,6 +28,10 @@ export default function SettingsPage() {
     async function fetchUsers() {
       try {
         setLoading(true);
+        
+        if (!supabase) {
+          throw new Error('Supabase client not available');
+        }
         
         // Fetch profiles which contain role information
         const { data: profiles, error } = await supabase
@@ -46,7 +51,7 @@ export default function SettingsPage() {
     }
     
     fetchUsers();
-  }, []);
+  }, [supabase]);
 
   // Add new user
   const handleAddUser = async (e: React.FormEvent) => {
@@ -54,6 +59,11 @@ export default function SettingsPage() {
     
     if (!newUserEmail || !newUserPassword) {
       setError('Please fill in all fields');
+      return;
+    }
+    
+    if (!supabase) {
+      setError('Database connection not available');
       return;
     }
     
@@ -106,6 +116,10 @@ export default function SettingsPage() {
     try {
       setError(null);
       
+      if (!supabase) {
+        throw new Error('Database connection not available');
+      }
+      
       const { error } = await supabase
         .from('profiles')
         .update({ role: newRole })
@@ -127,6 +141,11 @@ export default function SettingsPage() {
   // Delete user
   const deleteUser = async (userId: string) => {
     if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      return;
+    }
+    
+    if (!supabase) {
+      setError('Database connection not available');
       return;
     }
     
