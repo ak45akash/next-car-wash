@@ -2,7 +2,14 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import BookingForm from '../components/BookingForm';
 
-export default function BookingPage() {
+interface BookingPageProps {
+  searchParams: Promise<{ service?: string }>;
+}
+
+export default async function BookingPage({ searchParams }: BookingPageProps) {
+  const params = await searchParams;
+  const preselectedServiceId = params.service;
+
   return (
     <>
       <Navbar />
@@ -17,7 +24,7 @@ export default function BookingPage() {
           </div>
           
           <div className="max-w-3xl mx-auto">
-            <BookingForm />
+            <BookingForm preselectedServiceId={preselectedServiceId} />
           </div>
         </div>
       </div>
