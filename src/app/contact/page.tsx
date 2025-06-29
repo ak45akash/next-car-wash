@@ -185,9 +185,9 @@ export default function ContactPage() {
                     <div>
                       <h3 className="font-bold text-lg">Our Location</h3>
                       <p className="text-gray-600">
-                        123 Car Wash Street, Andheri West<br />
-                        Mumbai, Maharashtra 400053<br />
-                        India
+                        Plot number 589, near bestech mall and business towers<br />
+                        Sector 66, Sahibzada Ajit Singh Nagar<br />
+                        Punjab 160062, India
                       </p>
                     </div>
                   </div>
@@ -199,8 +199,7 @@ export default function ContactPage() {
                     <div>
                       <h3 className="font-bold text-lg">Phone Number</h3>
                       <p className="text-gray-600">
-                        +91 98765 43210<br />
-                        +91 98765 43211
+                        +91 9646616419
                       </p>
                     </div>
                   </div>
@@ -212,8 +211,7 @@ export default function ContactPage() {
                     <div>
                       <h3 className="font-bold text-lg">Email Address</h3>
                       <p className="text-gray-600">
-                        info@shinewash.in<br />
-                        support@shinewash.in
+                        info@diamondsteamwash.com
                       </p>
                     </div>
                   </div>
@@ -237,7 +235,7 @@ export default function ContactPage() {
               <div className="bg-white rounded-lg shadow-md p-4">
                 <div className="h-[300px] w-full bg-gray-200 rounded-md overflow-hidden">
                   <iframe 
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d241317.11609823277!2d72.74109995709657!3d19.08219783958221!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be7c6306644edc1%3A0x5da4ed8f8d648c69!2sMumbai%2C%20Maharashtra!5e0!3m2!1sen!2sin!4v1627309555814!5m2!1sen!2sin" 
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d27249.036836540895!2d76.6919!3d30.7046!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390fef5b3b5b3b5b%3A0x5b5b5b5b5b5b5b5b!2sSector%2066%2C%20Sahibzada%20Ajit%20Singh%20Nagar%2C%20Punjab!5e0!3m2!1sen!2sin!4v1627309555814!5m2!1sen!2sin" 
                     className="w-full h-full"
                     style={{ border: 0 }}
                     allowFullScreen={true}

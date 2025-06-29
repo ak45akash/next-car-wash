@@ -75,9 +75,22 @@ export const BookingClosureProvider: React.FC<BookingClosureProviderProps> = ({ 
       if (data && data.value) {
         try {
           // Handle both string and object values
-          const closureData = typeof data.value === 'string' 
-            ? JSON.parse(data.value) 
-            : data.value;
+          let closureData;
+          if (typeof data.value === 'string') {
+            // Validate JSON before parsing
+            if (data.value.trim() === '' || data.value === 'null' || data.value === 'undefined') {
+              closureData = { isClosed: false, endTime: null };
+            } else {
+              try {
+                closureData = JSON.parse(data.value);
+              } catch (jsonError) {
+                console.error('Invalid JSON in booking closure data:', data.value, jsonError);
+                closureData = { isClosed: false, endTime: null };
+              }
+            }
+          } else {
+            closureData = data.value;
+          }
           
           if (closureData.isClosed) {
             const endTime = new Date(closureData.endTime);

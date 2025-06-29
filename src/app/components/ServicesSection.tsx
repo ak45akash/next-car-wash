@@ -2,16 +2,7 @@ import ServiceCard from './ServiceCard';
 import Link from 'next/link';
 import { getServices as getServicesFromDB, getSettings } from '@/lib/supabase';
 
-interface Service {
-  id: number;
-  name: string;
-  description: string;
-  duration: number;
-  price: number;
-  category: string;
-  status: string;
-  image_url?: string;
-}
+import { Service } from '@/types/index';
 
 interface DisplaySettings {
   showDuration: boolean;
@@ -38,7 +29,17 @@ async function getDisplaySettings(): Promise<DisplaySettings> {
     // Use direct database connection to avoid infinite loop
     const data = await getSettings('display_options');
     if (data?.value) {
-      const settings = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+      let settings;
+      if (typeof data.value === 'string') {
+        try {
+          settings = JSON.parse(data.value);
+        } catch (jsonError) {
+          console.error('Invalid JSON in services section display settings:', data.value, jsonError);
+          settings = { showDuration: true, showCategory: true };
+        }
+      } else {
+        settings = data.value;
+      }
       return {
         showDuration: settings.showDuration !== false,
         showCategory: settings.showCategory !== false

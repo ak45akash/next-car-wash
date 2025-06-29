@@ -48,7 +48,12 @@ export async function GET() {
       try {
         data.value = JSON.parse(data.value);
       } catch (e) {
-        // Keep as string if parsing fails
+        console.error('Invalid JSON in display_options setting:', data.value, e);
+        // Return default values if JSON is invalid
+        data.value = {
+          showDuration: true,
+          showCategory: true
+        };
       }
     }
     
@@ -120,7 +125,12 @@ export async function PUT(request: Request) {
       try {
         data.value = JSON.parse(data.value);
       } catch (e) {
-        // Keep as string if parsing fails
+        console.error('Invalid JSON in display_options response:', data.value, e);
+        // Return default values if JSON is invalid
+        data.value = {
+          showDuration: true,
+          showCategory: true
+        };
       }
     }
     

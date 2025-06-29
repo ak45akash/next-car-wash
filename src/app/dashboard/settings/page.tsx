@@ -53,7 +53,17 @@ export default function SettingsPage() {
       if (response.ok) {
         const data = await response.json();
         if (data && data.value) {
-          const settings = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+          let settings;
+          if (typeof data.value === 'string') {
+            try {
+              settings = JSON.parse(data.value);
+            } catch (jsonError) {
+              console.error('Invalid JSON in dashboard settings display settings:', data.value, jsonError);
+              settings = { showDuration: true, showCategory: true };
+            }
+          } else {
+            settings = data.value;
+          }
           setDisplaySettings({
             showDuration: settings.showDuration !== false, // default to true
             showCategory: settings.showCategory !== false  // default to true
