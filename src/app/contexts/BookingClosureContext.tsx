@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 
 interface BookingClosureContextType {
   isClosed: boolean;
@@ -33,11 +33,8 @@ export const BookingClosureProvider: React.FC<BookingClosureProviderProps> = ({ 
   const [error, setError] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
-  const [initialized, setInitialized] = useState(false);
-  const MAX_RETRIES = 3;
 
-  const updateClosureStatus = async () => {
+  const updateClosureStatus = useCallback(async () => {
     // Prevent multiple concurrent updates
     if (isUpdating) {
       console.log('Closure status update already in progress, skipping');
@@ -53,39 +50,24 @@ export const BookingClosureProvider: React.FC<BookingClosureProviderProps> = ({ 
       if (!response.ok) {
         console.log('Response from fetching booking closure status:', response.status, response.statusText);
         
-        // If we get a consistent error, stop retrying after MAX_RETRIES
-        if (retryCount >= MAX_RETRIES) {
-          console.log(`Max retries (${MAX_RETRIES}) reached, setting default values`);
+        // For auth issues, don't show error to the user
+        if (response.status === 401 || response.status === 403) {
+          console.log('Authentication required for booking closure settings. Using default values.');
           if (isMounted) {
+            setError(null);
             setIsClosed(false);
             setClosureEndTime(null);
-            // Don't show this error to the user, just log to console
-            console.log('Unable to fetch booking closure status. Using default settings.');
-            setError(null);
           }
         } else {
-          // Increment retry count
-          setRetryCount(prevCount => prevCount + 1);
-          
-          // Set an error for the UI - but only for server errors, not auth issues
-          if (response.status !== 401 && response.status !== 403) {
-            if (isMounted) {
-              setError(`Failed to fetch booking closure status (Attempt ${retryCount + 1}/${MAX_RETRIES})`);
-            }
-          } else {
-            // For auth issues, don't show error to the user
-            console.log('Authentication required for booking closure settings. Using default values.');
+          console.log('Unable to fetch booking closure status. Using default settings.');
+          if (isMounted) {
             setError(null);
-            // Set default values
             setIsClosed(false);
             setClosureEndTime(null);
           }
         }
         return;
       }
-      
-      // Reset retry count on success
-      setRetryCount(0);
       
       const data = await response.json();
       console.log('Booking closure data:', data);
@@ -106,8 +88,12 @@ export const BookingClosureProvider: React.FC<BookingClosureProviderProps> = ({ 
                 setError(null);
               }
             } else {
-              // End time has passed, reopen bookings
-              await reopenBookings();
+              // End time has passed, just update the UI
+              if (isMounted) {
+                setIsClosed(false);
+                setClosureEndTime(null);
+                setError(null);
+              }
             }
           } else {
             if (isMounted) {
@@ -119,7 +105,7 @@ export const BookingClosureProvider: React.FC<BookingClosureProviderProps> = ({ 
         } catch (parseErr) {
           console.error('Error parsing closure data:', parseErr);
           if (isMounted) {
-            setError('Error parsing booking closure data');
+            setError(null);
             setIsClosed(false);
             setClosureEndTime(null);
           }
@@ -134,34 +120,18 @@ export const BookingClosureProvider: React.FC<BookingClosureProviderProps> = ({ 
     } catch (err) {
       console.log('Exception in updateClosureStatus:', err);
       if (isMounted) {
-        if (retryCount >= MAX_RETRIES) {
-          setIsClosed(false);
-          setClosureEndTime(null);
-          setError(null); // Don't show errors to the user
-          console.log('Unable to connect to the server after multiple attempts. Using default settings.');
-        } else {
-          setRetryCount(prevCount => prevCount + 1);
-          
-          // Only show error if it's not auth-related
-          const errorMsg = err instanceof Error ? err.message : 'Connection error';
-          if (!errorMsg.includes('Authentication') && !errorMsg.includes('401')) {
-            setError(`Connection error (Attempt ${retryCount + 1}/${MAX_RETRIES})`);
-          } else {
-            setError(null);
-            // Set default values
-            setIsClosed(false);
-            setClosureEndTime(null);
-          }
-        }
+        setIsClosed(false);
+        setClosureEndTime(null);
+        setError(null);
+        console.log('Connection error. Using default settings.');
       }
     } finally {
       if (isMounted) {
         setIsLoading(false);
         setIsUpdating(false);
-        setInitialized(true);
       }
     }
-  };
+  }, [isUpdating, isMounted]);
 
   const closeBookings = async (hours: number) => {
     setIsLoading(true);
@@ -233,7 +203,7 @@ export const BookingClosureProvider: React.FC<BookingClosureProviderProps> = ({ 
     }
   };
 
-  const reopenBookings = async () => {
+  const reopenBookings = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     
@@ -295,13 +265,11 @@ export const BookingClosureProvider: React.FC<BookingClosureProviderProps> = ({ 
         setIsLoading(false);
       }
     }
-  };
+  }, [isMounted]);
 
   useEffect(() => {
-    // Initial load
-    if (!initialized) {
-      updateClosureStatus();
-    }
+    // Initial load - only run once when component mounts
+    updateClosureStatus();
     
     // Check every minute if the closure end time has passed
     const interval = setInterval(() => {
@@ -317,7 +285,7 @@ export const BookingClosureProvider: React.FC<BookingClosureProviderProps> = ({ 
       setIsMounted(false);
       clearInterval(interval);
     };
-  }, [initialized, isClosed, closureEndTime]);
+  }, []); // Empty dependency array - only run once on mount
 
   return (
     <BookingClosureContext.Provider

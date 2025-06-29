@@ -1,41 +1,91 @@
-'use client';
-
 import Image from 'next/image';
 import Link from 'next/link';
 
-interface ServiceCardProps {
-  title: string;
+interface Service {
+  id: number;
+  name: string;
   description: string;
-  imageSrc: string;
-  price: string;
-  link: string;
+  duration: number;
+  price: number;
+  category: string;
+  status: string;
+  image_url?: string;
 }
 
-const ServiceCard = ({ title, description, imageSrc, price, link }: ServiceCardProps) => {
+interface DisplaySettings {
+  showDuration: boolean;
+  showCategory: boolean;
+}
+
+interface ServiceCardProps {
+  service: Service;
+  index: number;
+  displaySettings?: DisplaySettings;
+}
+
+const formatDuration = (totalMinutes: number): string => {
+  const days = Math.floor(totalMinutes / (24 * 60));
+  const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+  const minutes = totalMinutes % 60;
+
+  const parts = [];
+  if (days > 0) parts.push(`${days} day${days > 1 ? 's' : ''}`);
+  if (hours > 0) parts.push(`${hours} hour${hours > 1 ? 's' : ''}`);
+  if (minutes > 0) parts.push(`${minutes} minute${minutes > 1 ? 's' : ''}`);
+
+  return parts.join(', ') || '0 minutes';
+};
+
+const ServiceCard: React.FC<ServiceCardProps> = ({ service, index, displaySettings }) => {
+  // Use default settings if not provided
+  const settings = displaySettings || {
+    showDuration: true,
+    showCategory: true
+  };
+
   return (
-    <div className="bg-white rounded-xl shadow-lg overflow-hidden group hover:shadow-xl transition-all duration-300 h-full border border-gray-100">
-      <div className="relative h-56 w-full overflow-hidden">
+    <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 h-full flex flex-col">
+      <div className="relative h-48 overflow-hidden">
         <Image
-          src={imageSrc}
-          alt={title}
+          src={service.image_url || '/images/car-wash.jpg'}
+          alt={service.name}
           fill
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          className="object-cover group-hover:scale-110 transition-transform duration-700"
+          className="object-cover transition-transform duration-300 hover:scale-110"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-        <div className="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-          {price}
+        <div className="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+          ₹{service.price.toLocaleString()}
         </div>
       </div>
-      <div className="p-6">
-        <h3 className="text-xl font-bold mb-3 text-gray-800">{title}</h3>
-        <p className="text-gray-600 mb-5">{description}</p>
-        <div className="mt-auto">
-          <Link href={link} className="inline-flex items-center font-medium text-blue-600 hover:text-blue-800 transition-colors group">
+      
+      <div className="p-6 flex-grow flex flex-col">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-xl font-bold text-gray-800">{service.name}</h3>
+          {settings.showCategory && (
+            <span className="text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+              {service.category}
+            </span>
+          )}
+        </div>
+        
+        {settings.showDuration && (
+          <p className="text-gray-600 text-sm mb-4">
+            Duration: {formatDuration(service.duration)}
+          </p>
+        )}
+        
+        <div className="text-gray-600 mb-6 flex-grow">
+          <div 
+            className="service-description text-sm leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: service.description }}
+          />
+        </div>
+        
+        <div className="flex justify-end">
+          <Link
+            href="/book"
+            className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors duration-200 text-sm font-medium"
+          >
             Book Now
-            <svg className="w-5 h-5 ml-2 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-            </svg>
           </Link>
         </div>
       </div>

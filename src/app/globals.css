@@ -105,3 +105,29 @@ body {
   line-height: 1.2;
   font-weight: 700;
 }
+
+/* Service Card Styles */
+.service-description p {
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.service-description ul {
+  margin: 0.5rem 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.service-description li {
+  margin-bottom: 0.4rem;
+  padding-left: 0;
+  display: flex;
+  align-items: flex-start;
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+.service-description strong {
+  font-weight: 600;
+}
