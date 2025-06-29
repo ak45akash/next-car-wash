@@ -1,25 +1,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
-
-interface Service {
-  id: number;
-  name: string;
-  description: string;
-  duration: number;
-  price: number;
-  category: string;
-  status: string;
-  image_url?: string;
-}
-
-interface DisplaySettings {
-  showDuration: boolean;
-  showCategory: boolean;
-}
+import type { Service, DisplaySettings } from '@/types';
 
 interface ServiceCardProps {
   service: Service;
-  index: number;
+  index?: number;
   displaySettings?: DisplaySettings;
 }
 
