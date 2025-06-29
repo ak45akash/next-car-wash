@@ -45,26 +45,26 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, index, displaySettin
 
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 h-full flex flex-col">
-      <div className="relative h-48 overflow-hidden">
+      <div className="relative h-60 overflow-hidden">
         <Image
           src={service.image_url || '/images/car-wash.jpg'}
           alt={service.name}
           fill
           className="object-cover transition-transform duration-300 hover:scale-110"
         />
-        <div className="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-          ₹{service.price.toLocaleString()}
-        </div>
+        {settings.showCategory && (
+          <div className="absolute top-3 right-3 bg-blue-600 text-white px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-medium">
+            {service.category}
+          </div>
+        )}
       </div>
       
-      <div className="p-6 flex-grow flex flex-col">
+      <div className="p-4 sm:p-6 flex-grow flex flex-col">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-xl font-bold text-gray-800">{service.name}</h3>
-          {settings.showCategory && (
-            <span className="text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
-              {service.category}
-            </span>
-          )}
+          <div className="text-lg font-bold text-blue-600">
+            ₹{service.price.toLocaleString()}
+          </div>
         </div>
         
         {settings.showDuration && (
@@ -76,7 +76,9 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, index, displaySettin
         <div className="text-gray-600 mb-6 flex-grow">
           <div 
             className="service-description text-sm leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: service.description }}
+            dangerouslySetInnerHTML={{ 
+              __html: service.description.replace(/✓([A-Za-z])/g, '✓ $1') 
+            }}
           />
         </div>
         
