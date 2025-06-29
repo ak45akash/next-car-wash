@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FaUserPlus, FaTrash, FaEdit } from 'react-icons/fa';
+import { FaUserCog, FaUserPlus, FaTrash, FaEdit, FaEye, FaEyeSlash } from 'react-icons/fa';
 import DashboardLayout from '../components/DashboardLayout';
-import { useSupabase } from '@/app/contexts/SupabaseContext';
+import { supabase } from '@/lib/supabase';
 
 interface UserProfile {
   id: string;
@@ -12,8 +12,12 @@ interface UserProfile {
   created_at: string;
 }
 
+interface DisplaySettings {
+  showDuration: boolean;
+  showCategory: boolean;
+}
+
 export default function SettingsPage() {
-  const { supabase } = useSupabase();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,36 +26,100 @@ export default function SettingsPage() {
   const [newUserRole, setNewUserRole] = useState('user');
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const [showAddUserForm, setShowAddUserForm] = useState(false);
+  
+  // Display settings state
+  const [displaySettings, setDisplaySettings] = useState<DisplaySettings>({
+    showDuration: true,
+    showCategory: true
+  });
+  const [displaySettingsLoading, setDisplaySettingsLoading] = useState(false);
 
-  // Fetch users
+  // Fetch users and display settings
   useEffect(() => {
-    async function fetchUsers() {
-      try {
-        setLoading(true);
-        
-        if (!supabase) {
-          throw new Error('Supabase client not available');
-        }
-        
-        // Fetch profiles which contain role information
-        const { data: profiles, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .order('created_at', { ascending: false });
-          
-        if (error) throw error;
-        
-        setUsers(profiles || []);
-      } catch (err) {
-        console.error('Error fetching users:', err);
-        setError('Failed to load users. Please try again.');
-      } finally {
-        setLoading(false);
-      }
+    async function fetchData() {
+      await Promise.all([fetchUsers(), fetchDisplaySettings()]);
     }
     
-    fetchUsers();
-  }, [supabase]);
+    fetchData();
+  }, []);
+
+  // Fetch display settings
+  async function fetchDisplaySettings() {
+    try {
+      console.log('Dashboard Settings Page: Fetching display options setting');
+      setDisplaySettingsLoading(true);
+      const response = await fetch('/api/settings/display_options');
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.value) {
+          const settings = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+          setDisplaySettings({
+            showDuration: settings.showDuration !== false, // default to true
+            showCategory: settings.showCategory !== false  // default to true
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching display settings:', err);
+      // Keep default values if fetch fails
+    } finally {
+      setDisplaySettingsLoading(false);
+    }
+  }
+
+  // Update display settings
+  async function updateDisplaySettings(newSettings: Partial<DisplaySettings>) {
+    try {
+      setDisplaySettingsLoading(true);
+      const updatedSettings = { ...displaySettings, ...newSettings };
+      
+      const response = await fetch('/api/settings/display_options', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ value: updatedSettings }),
+      });
+      
+      if (response.ok) {
+        setDisplaySettings(updatedSettings);
+      } else {
+        throw new Error('Failed to update display settings');
+      }
+    } catch (err) {
+      console.error('Error updating display settings:', err);
+      setError('Failed to update display settings. Please try again.');
+    } finally {
+      setDisplaySettingsLoading(false);
+    }
+  }
+
+  // Fetch users
+  async function fetchUsers() {
+    try {
+      setLoading(true);
+      
+      if (!supabase) {
+        throw new Error('Database connection not available');
+      }
+      
+      // Fetch profiles which contain role information
+      const { data: profiles, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+        
+      if (error) throw error;
+      
+      setUsers(profiles || []);
+    } catch (err) {
+      console.error('Error fetching users:', err);
+      setError('Failed to load users. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   // Add new user
   const handleAddUser = async (e: React.FormEvent) => {
@@ -70,6 +138,10 @@ export default function SettingsPage() {
     try {
       setError(null);
       setLoading(true);
+      
+      if (!supabase) {
+        throw new Error('Database connection not available');
+      }
       
       // Sign up the user
       const { data, error } = await supabase.auth.admin.createUser({
@@ -152,6 +224,10 @@ export default function SettingsPage() {
     try {
       setError(null);
       
+      if (!supabase) {
+        throw new Error('Database connection not available');
+      }
+      
       const { error } = await supabase.auth.admin.deleteUser(userId);
       
       if (error) throw error;
@@ -175,6 +251,76 @@ export default function SettingsPage() {
           <p className="text-red-700">{error}</p>
         </div>
       )}
+
+      {/* Display Settings Section */}
+      <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
+        <div className="p-4 sm:p-6 border-b">
+          <h2 className="text-lg font-semibold text-gray-800">Display Settings</h2>
+          <p className="text-sm text-gray-600 mt-1">Control what information is shown on service cards</p>
+        </div>
+        
+        <div className="p-4 sm:p-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  {displaySettings.showDuration ? (
+                    <FaEye className="h-5 w-5 text-green-500" />
+                  ) : (
+                    <FaEyeSlash className="h-5 w-5 text-gray-400" />
+                  )}
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-gray-900">Show Duration</h3>
+                  <p className="text-sm text-gray-500">Display service duration on service cards</p>
+                </div>
+              </div>
+              <button
+                onClick={() => updateDisplaySettings({ showDuration: !displaySettings.showDuration })}
+                disabled={displaySettingsLoading}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  displaySettings.showDuration ? 'bg-blue-600' : 'bg-gray-200'
+                } ${displaySettingsLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    displaySettings.showDuration ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  {displaySettings.showCategory ? (
+                    <FaEye className="h-5 w-5 text-green-500" />
+                  ) : (
+                    <FaEyeSlash className="h-5 w-5 text-gray-400" />
+                  )}
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-gray-900">Show Category</h3>
+                  <p className="text-sm text-gray-500">Display service category on service cards</p>
+                </div>
+              </div>
+              <button
+                onClick={() => updateDisplaySettings({ showCategory: !displaySettings.showCategory })}
+                disabled={displaySettingsLoading}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  displaySettings.showCategory ? 'bg-blue-600' : 'bg-gray-200'
+                } ${displaySettingsLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    displaySettings.showCategory ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="p-4 sm:p-6 border-b flex justify-between items-center">

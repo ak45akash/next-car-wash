@@ -39,7 +39,11 @@ const timeSlots = [
   '05:00 PM', '06:00 PM'
 ];
 
-const BookingForm = () => {
+interface BookingFormProps {
+  preselectedServiceId?: string;
+}
+
+const BookingForm = ({ preselectedServiceId }: BookingFormProps) => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedService, setSelectedService] = useState('');
   const [bookingCompleted, setBookingCompleted] = useState(false);
@@ -48,20 +52,46 @@ const BookingForm = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  const { register, handleSubmit, watch, formState: { errors }, reset } = useForm<FormValues>();
+  const { register, handleSubmit, watch, formState: { errors }, reset, setValue, control } = useForm<FormValues>();
   const { isClosed } = useBookingClosure();
   
   const paymentMethod = watch('paymentMethod');
-  const selectedServiceObject = services.find(service => service.id === selectedService);
+  const watchedService = watch('service');
+  const selectedServiceObject = services.find(service => service.id === watchedService);
   const servicePrice = selectedServiceObject ? `₹${selectedServiceObject.price}` : '';
+
+
 
   useEffect(() => {
     async function loadServices() {
       try {
         const serviceData = await getServices();
         setServices(serviceData || []);
+        
         if (serviceData && serviceData.length > 0) {
-          setSelectedService(serviceData[0].id);
+          let initialServiceId = '';
+          
+          // If a service is preselected and exists in the data, use it
+          if (preselectedServiceId) {
+            // Convert preselectedServiceId to string for comparison since service.id might be string
+            const preselectedService = serviceData.find(service => service.id.toString() === preselectedServiceId.toString());
+            
+            if (preselectedService) {
+              initialServiceId = preselectedServiceId;
+            } else {
+              // If preselected service doesn't exist, fall back to Basic Wash or first service
+              const basicWash = serviceData.find(service => service.name.toLowerCase().includes('basic'));
+              initialServiceId = basicWash ? basicWash.id : serviceData[0].id;
+            }
+          } else {
+            // No preselected service - default to Basic Wash if available, otherwise first service
+            const basicWash = serviceData.find(service => service.name.toLowerCase().includes('basic'));
+            initialServiceId = basicWash ? basicWash.id : serviceData[0].id;
+          }
+          
+          // Set both state and form value
+          setSelectedService(initialServiceId);
+          setValue('service', initialServiceId);
         }
       } catch (err) {
         console.error('Error loading services:', err);
@@ -72,7 +102,9 @@ const BookingForm = () => {
     }
     
     loadServices();
-  }, []);
+  }, [preselectedServiceId, setValue]);
+
+
 
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
     if (!selectedDate) {
@@ -85,8 +117,11 @@ const BookingForm = () => {
       // Format date for database
       const formattedDate = selectedDate.toISOString().split('T')[0];
       
+      // Use the form data service value instead of state
+      const serviceId = data.service || selectedService;
+      
       // Find service details
-      const service = services.find(s => s.id === selectedService);
+      const service = services.find(s => s.id === serviceId);
       
       // Create booking object
       const bookingData = {
@@ -94,7 +129,7 @@ const BookingForm = () => {
         customer_email: data.email,
         customer_phone: data.phone,
         car_model: data.carModel,
-        service_id: selectedService,
+        service_id: serviceId,
         service_name: service?.name || '',
         service_price: service?.price || 0,
         date: formattedDate,
@@ -112,7 +147,9 @@ const BookingForm = () => {
       reset();
       setSelectedDate(null);
       if (services.length > 0) {
-        setSelectedService(services[0].id);
+        // Reset to Basic Wash or first service
+        const basicWash = services.find(service => service.name.toLowerCase().includes('basic'));
+        setSelectedService(basicWash ? basicWash.id : services[0].id);
       }
       setBookingCompleted(true);
     } catch (err) {
@@ -288,10 +325,15 @@ const BookingForm = () => {
             <label className="block text-gray-700 mb-2 font-medium">
               Select Service <span className="text-red-500">*</span>
             </label>
+
             <select
-              className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={selectedService}
-              onChange={(e) => setSelectedService(e.target.value)}
+              {...register('service', { 
+                required: 'Service selection is required',
+                onChange: (e) => {
+                  setSelectedService(e.target.value);
+                }
+              })}
+              className={`w-full px-3 py-2 rounded-md border ${errors.service ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
             >
               {services.map((service) => (
                 <option key={service.id} value={service.id}>
@@ -299,7 +341,7 @@ const BookingForm = () => {
                 </option>
               ))}
             </select>
-            <input type="hidden" {...register('service', { required: true })} value={selectedService} />
+            {errors.service && <p className="mt-1 text-red-500 text-sm">{errors.service.message}</p>}
           </div>
           
           {/* Date and Time */}

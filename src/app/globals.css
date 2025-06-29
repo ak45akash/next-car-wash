@@ -105,3 +105,40 @@ body {
   line-height: 1.2;
   font-weight: 700;
 }
+
+/* Service Card Styles */
+.service-description p {
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.service-description ul {
+  margin: 0.5rem 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.service-description li {
+  margin-bottom: 0.4rem;
+  padding-left: 0;
+  display: flex;
+  align-items: flex-start;
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+/* Ensure proper spacing for checkmarks and other symbols */
+.service-description {
+  font-feature-settings: 'kern' 1;
+  letter-spacing: 0.01em;
+}
+
+/* Fix spacing between checkmarks and text */
+.service-description li {
+  gap: 0.4rem;
+}
+
+.service-description strong {
+  font-weight: 600;
+}

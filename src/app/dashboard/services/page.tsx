@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import { FaSearch, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import { supabase } from '@/lib/supabase';
@@ -13,6 +13,9 @@ import Modal from '@/app/dashboard/components/Modal';
 import LoadingSpinner from '@/app/dashboard/components/LoadingSpinner';
 import Image from 'next/image';
 import { SupabaseClient } from '@supabase/supabase-js';
+import RichTextEditor from '@/app/components/RichTextEditor';
+import RichTextDisplay from '@/app/components/RichTextDisplay';
+import EditorHelp from '@/app/components/EditorHelp';
 
 interface Service {
   id: number;
@@ -433,20 +436,23 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ initialData, onSubmit, onCanc
             {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              rows={3}
-              className={`block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out ${
-                errors.description ? 'border-red-300' : 'border-gray-300'
-              }`}
-              placeholder="Enter service description"
-            />
-            {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
-          </div>
+                      <div>
+              <div className="flex items-center justify-between mb-1">
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                  Description*
+                </label>
+                <EditorHelp />
+              </div>
+              <RichTextEditor
+                value={formData.description}
+                onChange={(value) => setFormData({ ...formData, description: value })}
+                placeholder="Enter service description with features..."
+                height={200}
+                error={errors.description}
+                className={errors.description ? 'error' : ''}
+              />
+              {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
+            </div>
           
           {/* Image Upload Section - Only show if supported */}
           {imageSupported && (
@@ -970,18 +976,20 @@ const EditServiceModal: React.FC<EditServiceModalProps> = ({ isOpen, onClose, se
         </div>
 
         <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-            Description*
-          </label>
-          <textarea
-            id="description"
-            name="description"
+          <div className="flex items-center justify-between mb-1">
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+              Description*
+            </label>
+            <EditorHelp />
+          </div>
+          <RichTextEditor
             value={formData.description}
-            onChange={handleInputChange}
-                rows={4}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            required
-          ></textarea>
+            onChange={(value) => setFormData({ ...formData, description: value })}
+            placeholder="Enter service description with features..."
+            height={200}
+            error={errors.description}
+            className={errors.description ? 'error' : ''}
+          />
           {errors.description && (
             <p className="mt-1 text-sm text-red-600">{errors.description}</p>
           )}
@@ -1229,23 +1237,42 @@ export default function ServicesPage() {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [imageSupported] = useState<boolean>(true);
 
-  // Fetch services from API
+  // Manual refresh function
+  const refreshServices = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/services', {
+        cache: 'no-store'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch services');
+      }
+      
+      const data = await response.json();
+      setServices(data);
+      setError(null);
+    } catch (err) {
+      console.error('Error refreshing services:', err);
+      setError('Failed to refresh services');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch services from API - only once when user is available
   useEffect(() => {
+    let isMounted = true;
+    
     async function fetchServices() {
+      if (!user?.id || !isMounted) return;
+      
       try {
-        console.log('Fetching services...');
+        console.log('Dashboard Services Page: Fetching services...');
         setLoading(true);
-        
-        if (!user) {
-          console.log('No user found, redirecting to login');
-          router.push('/login');
-          return;
-        }
 
         const response = await fetch('/api/services', {
-          headers: {
-            'Cache-Control': 'no-store'
-          }
+          cache: 'no-store'
         });
         
         // Handle potential authentication issues
@@ -1262,21 +1289,31 @@ export default function ServicesPage() {
         }
         
         const data = await response.json();
-        console.log('Services fetched:', data);
-        setServices(data);
-        setError(null);
+        if (isMounted) {
+          console.log('Services fetched:', data);
+          setServices(data);
+          setError(null);
+        }
       } catch (err) {
-        console.error('Error fetching services:', err);
-        setError(err && typeof err === 'object' && 'message' in err 
-          ? err.message as string 
-          : 'Failed to load services. Please try again later.');
+        if (isMounted) {
+          console.error('Error fetching services:', err);
+          setError(err && typeof err === 'object' && 'message' in err 
+            ? err.message as string 
+            : 'Failed to load services. Please try again later.');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
 
     fetchServices();
-  }, [router, user]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]); // Only depend on user ID, not the whole user object
 
   // Add a new service
   const handleAddService = async (formData: Service) => {
@@ -1312,9 +1349,10 @@ export default function ServicesPage() {
       }
 
       console.log('Service added successfully:', responseData);
-      setServices(prev => [...prev, responseData]);
       setIsAddModalOpen(false);
       toast.success('Service added successfully!');
+      // Refresh the services list
+      refreshServices();
     } catch (err) {
       console.error('Error in handleAddService:', err);
       setError(err && typeof err === 'object' && 'message' in err 
@@ -1354,14 +1392,11 @@ export default function ServicesPage() {
       const updatedServiceData = await response.json();
       console.log('Service updated:', updatedServiceData);
       
-      // Update the services list with the updated service
-      setServices(services.map(s => 
-        s.id === currentService.id ? updatedServiceData : s
-      ));
-      
       setIsEditModalOpen(false);
       toast.success('Service updated successfully!');
       resetForm();
+      // Refresh the services list
+      refreshServices();
     } catch (error) {
       console.error('Error updating service:', error);
       const errorMessage = error && typeof error === 'object' && 'message' in error 
@@ -1384,9 +1419,11 @@ export default function ServicesPage() {
         throw new Error('Failed to delete service');
       }
 
-      setServices(services.filter(service => service.id !== currentService.id));
       setIsDeleteModalOpen(false);
       setCurrentService(null);
+      toast.success('Service deleted successfully!');
+      // Refresh the services list
+      refreshServices();
     } catch (err) {
       console.error('Error deleting service:', err);
       setError('Failed to delete service. Please try again.');
@@ -1657,7 +1694,9 @@ export default function ServicesPage() {
                         )}
                         <div>
                           <div className="text-sm font-medium text-gray-900">{service.name}</div>
-                          <div className="text-sm text-gray-500">{service.description}</div>
+                          <div className="text-sm text-gray-500 max-w-xs truncate">
+                            <RichTextDisplay content={service.description} className="prose-xs" />
+                          </div>
                         </div>
                       </div>
                     </td>
