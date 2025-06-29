@@ -85,7 +85,7 @@ export async function POST(request: Request) {
       if (!tableError) {
         console.log('image_url column exists in services table');
         if (serviceData.image_url) {
-          // @ts-ignore - Add the image_url if it exists in schema
+          // @ts-expect-error - Add the image_url if it exists in schema
           serviceDataToInsert.image_url = serviceData.image_url;
         }
       } else {

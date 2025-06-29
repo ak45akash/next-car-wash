@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback } from 'react';
 
 interface BookingClosureContextType {
   isClosed: boolean;
@@ -10,6 +10,7 @@ interface BookingClosureContextType {
   updateClosureStatus: () => Promise<void>;
   isLoading: boolean;
   error: string | null;
+  remainingTime: string | null;
 }
 
 const BookingClosureContext = createContext<BookingClosureContextType | undefined>(undefined);
@@ -35,9 +36,112 @@ export const BookingClosureProvider: React.FC<BookingClosureProviderProps> = ({ 
   const [isUpdating, setIsUpdating] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [initialized, setInitialized] = useState(false);
+  const [remainingTime, setRemainingTime] = useState<string | null>(null);
   const MAX_RETRIES = 3;
 
-  const updateClosureStatus = async () => {
+  // Use ref to access updateClosureStatus without triggering re-renders
+  const updateClosureStatusRef = useRef<() => Promise<void>>(() => Promise.resolve());
+  
+  // Calculate remaining time based on closure status
+  useEffect(() => {
+    if (!isClosed || !closureEndTime) {
+      setRemainingTime(null);
+      return;
+    }
+
+    const calculateTimeRemaining = () => {
+      const now = new Date();
+      const endTime = new Date(closureEndTime);
+      const timeDiff = endTime.getTime() - now.getTime();
+
+      if (timeDiff <= 0) {
+        setRemainingTime(null);
+        // Reopen bookings if end time has passed
+        if (updateClosureStatusRef.current) {
+          updateClosureStatusRef.current();
+        }
+        return;
+      }
+
+      const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+      const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+
+      setRemainingTime(`${hours}h ${minutes}m`);
+    };
+
+    calculateTimeRemaining();
+    const timer = setInterval(calculateTimeRemaining, 60000); // Update every minute
+
+    return () => clearInterval(timer);
+  }, [isClosed, closureEndTime]);
+
+  // Define reopenBookings first since it's used in updateClosureStatus
+  const reopenBookings = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const closureData = {
+        isClosed: false,
+        endTime: null,
+      };
+      
+      const response = await fetch('/api/settings/booking_closure', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ value: closureData }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        const errorMessage = errorData?.error || response.statusText;
+        
+        // Log for debugging but don't show as error
+        console.log('Response from reopening bookings:', response.status, errorMessage);
+        
+        // For auth errors, don't show to regular users, just log to console
+        if (response.status === 401 || response.status === 403) {
+          console.log('Authentication/Permission issue - admin login required to update settings');
+          
+          // Just reset the UI state without showing error
+          if (isMounted) {
+            setIsClosed(false);
+            setClosureEndTime(null);
+            setError(null);
+          }
+          return;
+        } else {
+          throw new Error(`Failed to reopen bookings: ${errorMessage}`);
+        }
+      }
+      
+      if (isMounted) {
+        setIsClosed(false);
+        setClosureEndTime(null);
+        setError(null);
+      }
+    } catch (err) {
+      // Don't log error to console to avoid red error messages
+      if (isMounted) {
+        // Don't show error to user for auth issues
+        const errorMsg = err instanceof Error ? err.message : 'Failed to reopen bookings';
+        if (!errorMsg.includes('Authentication') && !errorMsg.includes('401')) {
+          setError(errorMsg);
+        } else {
+          setError(null);
+        }
+      }
+    } finally {
+      if (isMounted) {
+        setIsLoading(false);
+      }
+    }
+  }, [isMounted]);
+
+  // Define updateClosureStatus with useCallback to memoize it
+  const updateClosureStatus = useCallback(async () => {
     // Prevent multiple concurrent updates
     if (isUpdating) {
       console.log('Closure status update already in progress, skipping');
@@ -161,7 +265,12 @@ export const BookingClosureProvider: React.FC<BookingClosureProviderProps> = ({ 
         setInitialized(true);
       }
     }
-  };
+  }, [MAX_RETRIES, isMounted, isUpdating, reopenBookings, retryCount]);
+
+  // Assign the updateClosureStatus function to the ref when it changes
+  useEffect(() => {
+    updateClosureStatusRef.current = updateClosureStatus;
+  }, [updateClosureStatus]);
 
   const closeBookings = async (hours: number) => {
     setIsLoading(true);
@@ -233,74 +342,10 @@ export const BookingClosureProvider: React.FC<BookingClosureProviderProps> = ({ 
     }
   };
 
-  const reopenBookings = async () => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const closureData = {
-        isClosed: false,
-        endTime: null,
-      };
-      
-      const response = await fetch('/api/settings/booking_closure', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ value: closureData }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        const errorMessage = errorData?.error || response.statusText;
-        
-        // Log for debugging but don't show as error
-        console.log('Response from reopening bookings:', response.status, errorMessage);
-        
-        // For auth errors, don't show to regular users, just log to console
-        if (response.status === 401 || response.status === 403) {
-          console.log('Authentication/Permission issue - admin login required to update settings');
-          
-          // Just reset the UI state without showing error
-          if (isMounted) {
-            setIsClosed(false);
-            setClosureEndTime(null);
-            setError(null);
-          }
-          return;
-        } else {
-          throw new Error(`Failed to reopen bookings: ${errorMessage}`);
-        }
-      }
-      
-      if (isMounted) {
-        setIsClosed(false);
-        setClosureEndTime(null);
-        setError(null);
-      }
-    } catch (err) {
-      // Don't log error to console to avoid red error messages
-      if (isMounted) {
-        // Don't show error to user for auth issues
-        const errorMsg = err instanceof Error ? err.message : 'Failed to reopen bookings';
-        if (!errorMsg.includes('Authentication') && !errorMsg.includes('401')) {
-          setError(errorMsg);
-        } else {
-          setError(null);
-        }
-      }
-    } finally {
-      if (isMounted) {
-        setIsLoading(false);
-      }
-    }
-  };
-
   useEffect(() => {
     // Initial load
-    if (!initialized) {
-      updateClosureStatus();
+    if (!initialized && updateClosureStatusRef.current) {
+      updateClosureStatusRef.current();
     }
     
     // Check every minute if the closure end time has passed
@@ -317,7 +362,7 @@ export const BookingClosureProvider: React.FC<BookingClosureProviderProps> = ({ 
       setIsMounted(false);
       clearInterval(interval);
     };
-  }, [initialized, isClosed, closureEndTime]);
+  }, [initialized, isClosed, closureEndTime, updateClosureStatus]);
 
   return (
     <BookingClosureContext.Provider
@@ -328,7 +373,8 @@ export const BookingClosureProvider: React.FC<BookingClosureProviderProps> = ({ 
         reopenBookings,
         updateClosureStatus,
         isLoading,
-        error
+        error,
+        remainingTime
       }}
     >
       {children}

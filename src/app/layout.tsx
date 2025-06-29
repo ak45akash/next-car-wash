@@ -21,11 +21,6 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Check for Supabase environment variables
-  const hasSupabaseCredentials = 
-    process.env.NEXT_PUBLIC_SUPABASE_URL && 
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  
   return (
     <html lang="en">
       <body className={inter.className}>

@@ -171,7 +171,10 @@ export async function getSettings(key: string) {
   }
 }
 
-export async function updateSetting(key: string, value: any) {
+// Define a more specific type for settings values
+type SettingValue = string | number | boolean | object | null;
+
+export async function updateSetting(key: string, value: SettingValue) {
   try {
     if (!supabase) {
       console.error('Supabase client not available');
@@ -192,7 +195,21 @@ export async function updateSetting(key: string, value: any) {
   }
 }
 
-export async function createBooking(bookingData: any) {
+// Define a type for booking data
+interface BookingData {
+  customer_name: string;
+  customer_email: string;
+  customer_phone: string;
+  service_id: string | number;
+  date: string;
+  time_slot: string;
+  status?: string;
+  created_at?: string;
+  // Use Record<string, unknown> instead of any for additional fields
+  [key: string]: string | number | boolean | object | null | undefined;
+}
+
+export async function createBooking(bookingData: BookingData) {
   try {
     if (!supabase) {
       console.error('Supabase client not available');

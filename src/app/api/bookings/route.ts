@@ -4,6 +4,10 @@ import { supabase } from '@/lib/supabase';
 // GET handler to fetch all bookings
 export async function GET() {
   try {
+    if (!supabase) {
+      return NextResponse.json({ error: 'Database connection not available' }, { status: 500 });
+    }
+    
     const { data, error } = await supabase
       .from('bookings')
       .select('*')
@@ -15,6 +19,7 @@ export async function GET() {
     
     return NextResponse.json(data);
   } catch (err) {
+    console.error('Error fetching bookings:', err);
     return NextResponse.json({ error: 'Failed to fetch bookings' }, { status: 500 });
   }
 }
@@ -22,6 +27,10 @@ export async function GET() {
 // POST handler to create a new booking
 export async function POST(request: Request) {
   try {
+    if (!supabase) {
+      return NextResponse.json({ error: 'Database connection not available' }, { status: 500 });
+    }
+    
     const bookingData = await request.json();
     
     // Validate required fields

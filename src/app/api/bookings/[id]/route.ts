@@ -1,13 +1,17 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
 // GET a single booking by ID
 export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
+    
+    if (!supabase) {
+      return NextResponse.json({ error: 'Database connection not available' }, { status: 503 });
+    }
     
     const { data, error } = await supabase
       .from('bookings')
@@ -32,12 +36,16 @@ export async function GET(
 
 // UPDATE a booking (patch)
 export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
     const updates = await request.json();
+    
+    if (!supabase) {
+      return NextResponse.json({ error: 'Database connection not available' }, { status: 503 });
+    }
     
     const { data, error } = await supabase
       .from('bookings')
@@ -62,11 +70,15 @@ export async function PATCH(
 
 // DELETE a booking
 export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
+    
+    if (!supabase) {
+      return NextResponse.json({ error: 'Database connection not available' }, { status: 503 });
+    }
     
     const { error } = await supabase
       .from('bookings')

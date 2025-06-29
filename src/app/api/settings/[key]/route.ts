@@ -1,14 +1,17 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+
+// Define a type for setting values
+type SettingValue = string | number | boolean | object | null;
 
 // In-memory cache for temporary settings used when users are not authenticated
 // This allows the UI to function properly without requiring login for every setting change
-const temporarySettings = new Map<string, any>();
+const temporarySettings = new Map<string, SettingValue>();
 
 // GET a specific setting by key
 export async function GET(
-  request: Request,
-  { params }: { params: { key: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ key: string }> }
 ) {
   try {
     const { key } = await params;
@@ -92,8 +95,9 @@ export async function GET(
       if (data && typeof data.value === 'string') {
         try {
           data.value = JSON.parse(data.value);
-        } catch (e) {
+        } catch (parseError) {
           // Keep as string if parsing fails
+          console.log('Failed to parse setting value as JSON:', parseError);
         }
       }
 
@@ -121,7 +125,8 @@ export async function GET(
     }
   } catch (err) {
     // For booking_closure, return a default response even on error
-    if (params?.key === 'booking_closure') {
+    const parsedParams = await params;
+    if (parsedParams?.key === 'booking_closure') {
       const defaultValue = JSON.stringify({
         isClosed: false,
         endTime: null
@@ -144,8 +149,8 @@ export async function GET(
 
 // PUT to update a specific setting, or create if it doesn't exist
 export async function PUT(
-  request: Request,
-  { params }: { params: { key: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ key: string }> }
 ) {
   try {
     const { key } = await params;
@@ -262,13 +267,15 @@ export async function PUT(
         if (data && typeof data.value === 'string') {
           try {
             data.value = JSON.parse(data.value);
-          } catch (e) {
+          } catch (parseError) {
             // Keep as string if parsing fails
+            console.log('Failed to parse setting value as JSON in response:', parseError);
           }
         }
         
         return NextResponse.json(data);
       } catch (dbError) {
+        console.error('Database error while updating booking closure setting:', dbError);
         temporarySettings.set(key, body.value);
         
         return NextResponse.json({
@@ -373,8 +380,9 @@ export async function PUT(
     if (data && typeof data.value === 'string') {
       try {
         data.value = JSON.parse(data.value);
-      } catch (e) {
+      } catch (parseError) {
         // Keep as string if parsing fails
+        console.log('Failed to parse setting value as JSON in response:', parseError);
       }
     }
 
@@ -389,8 +397,8 @@ export async function PUT(
 
 // DELETE a specific setting
 export async function DELETE(
-  request: Request,
-  { params }: { params: { key: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ key: string }> }
 ) {
   try {
     const { key } = await params;

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
-import { FaSearch, FaFilter, FaCalendarTimes, FaClock, FaSpinner } from 'react-icons/fa';
+import { FaSearch, FaCalendarTimes, FaClock, FaSpinner } from 'react-icons/fa';
 import { useBookingClosure } from '../../contexts/BookingClosureContext';
 
 // Define booking type

@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
 // GET a single service by ID
 export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
@@ -13,6 +13,10 @@ export async function GET(
     // Convert numeric string ID to number if needed
     const numericId = parseInt(id, 10);
     console.log('Numeric ID:', numericId);
+    
+    if (!supabase) {
+      return NextResponse.json({ error: 'Database connection not available' }, { status: 503 });
+    }
     
     const { data, error } = await supabase
       .from('services')
@@ -42,8 +46,8 @@ export async function GET(
 
 // UPDATE a service
 export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
@@ -55,6 +59,10 @@ export async function PATCH(
     // Convert numeric string ID to number if needed
     const numericId = parseInt(id, 10);
     console.log('Numeric ID:', numericId);
+    
+    if (!supabase) {
+      return NextResponse.json({ error: 'Database connection not available' }, { status: 503 });
+    }
     
     // Explicitly structure the data to ensure proper handling of all fields
     const updateData = {
@@ -97,8 +105,8 @@ export async function PATCH(
 
 // DELETE a service
 export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
@@ -107,6 +115,10 @@ export async function DELETE(
     // Convert numeric string ID to number if needed
     const numericId = parseInt(id, 10);
     console.log('Numeric ID:', numericId);
+    
+    if (!supabase) {
+      return NextResponse.json({ error: 'Database connection not available' }, { status: 503 });
+    }
     
     const { error } = await supabase
       .from('services')

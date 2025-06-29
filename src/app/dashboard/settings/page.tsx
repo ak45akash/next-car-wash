@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FaUserCog, FaUserPlus, FaTrash, FaEdit } from 'react-icons/fa';
+import { FaUserPlus, FaTrash, FaEdit } from 'react-icons/fa';
 import DashboardLayout from '../components/DashboardLayout';
 import { useSupabase } from '@/app/contexts/SupabaseContext';
 

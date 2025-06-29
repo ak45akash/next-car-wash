@@ -25,7 +25,7 @@ const LoginPage = () => {
       console.log('User already logged in, will redirect to dashboard');
       // Check if we're not already on the dashboard
       if (typeof window !== 'undefined' && window.location.pathname !== '/dashboard') {
-        router.push('/dashboard');
+      router.push('/dashboard');
       }
     }
   }, [user, loading, router]);
@@ -195,8 +195,11 @@ const LoginPage = () => {
           </div>
         </div>
         
-        <p className="mt-4 text-sm text-gray-600">
-          Don't have an account? Contact admin to get access.
+        <p className="mt-2 text-center text-sm text-gray-600">
+          Don&apos;t have an account?{' '}
+          <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-500">
+            Sign up
+          </Link>
         </p>
         
         {/* Debug button */}

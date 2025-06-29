@@ -11,6 +11,8 @@ import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import Modal from '@/app/dashboard/components/Modal';
 import LoadingSpinner from '@/app/dashboard/components/LoadingSpinner';
+import Image from 'next/image';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 interface Service {
   id: number;
@@ -99,7 +101,7 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ initialData, onSubmit, onCanc
 
   // Check if the database schema supports image_url
   useEffect(() => {
-    async function checkImageSupport() {
+    const checkImageSupport = async () => {
       try {
         console.log('Checking if database schema supports image_url');
         const response = await fetch('/api/services/schema-check');
@@ -113,16 +115,14 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ initialData, onSubmit, onCanc
         console.error('Error checking image support:', error);
         // Default to false if there's an error
       }
-    }
+    };
 
-    // For now, we'll infer support based on whether initialData has image_url
+    // We'll infer support based on whether initialData has image_url
     // This ensures existing data displays correctly
-    if (initialData && 'image_url' in initialData) {
-      imageSupported = true;
-    }
+    // Note: We're not modifying the prop directly anymore
 
     checkImageSupport(); // Enable the schema-check API endpoint
-  }, [initialData, imageSupported]);
+  }, [initialData]); // Removed imageSupported from dependencies
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -182,7 +182,8 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ initialData, onSubmit, onCanc
     }));
   };
 
-  const ensureBucketExists = async (client: any): Promise<boolean> => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const ensureBucketExists = async (client: SupabaseClient): Promise<boolean> => {
     try {
       console.log('Checking if bucket exists: service-images');
       
@@ -193,7 +194,16 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ initialData, onSubmit, onCanc
         return false;
       }
       
-      const bucketExists = buckets.some((bucket: any) => bucket.name === 'service-images');
+      interface Bucket {
+        id: string;
+        name: string;
+        owner: string;
+        created_at: string;
+        updated_at: string;
+        public: boolean;
+      }
+      
+      const bucketExists = buckets.some((bucket: Bucket) => bucket.name === 'service-images');
       
       if (!bucketExists) {
         console.log('Bucket does not exist, creating it: service-images');
@@ -232,53 +242,45 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ initialData, onSubmit, onCanc
 
   const uploadImage = async (file: File): Promise<string> => {
     try {
-      setUploading(true);
-      
       if (!supabase) {
-        const { initSupabaseClient } = await import('@/lib/supabase');
-        const client = initSupabaseClient();
-        
-        if (!client) {
-          console.error('Failed to initialize Supabase client');
-          throw new Error('Database connection not available. Please try again later.');
-        }
-        
-        const bucketReady = await ensureBucketExists(client);
-        if (!bucketReady) {
-          throw new Error('Failed to ensure storage bucket exists. Please try again later.');
-        }
-        
-        // Upload using the newly initialized client
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Math.random()}.${fileExt}`;
-        const filePath = `${fileName}`;
-
-        console.log('Uploading to bucket: service-images');
-        const { error: uploadError } = await client.storage
-          .from('service-images')
-          .upload(filePath, file);
-
-        if (uploadError) {
-          console.error('Upload error:', uploadError);
-          throw uploadError;
-        }
-        
-        const { data } = client.storage.from('service-images').getPublicUrl(filePath);
-        return data.publicUrl;
+        throw new Error('Supabase client not initialized');
       }
-
-      // Use existing client
+      
       // Ensure bucket exists
-      const bucketReady = await ensureBucketExists(supabase);
-      if (!bucketReady) {
-        throw new Error('Failed to ensure storage bucket exists. Please try again later.');
+      const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+        
+      if (listError) {
+        console.error('Error listing buckets:', listError);
+        throw new Error('Failed to check storage buckets');
+        }
+        
+      interface Bucket {
+        id: string;
+        name: string;
+        owner: string;
+        created_at: string;
+        updated_at: string;
+        public: boolean;
+      }
+      
+      const bucketExists = buckets.some((bucket: Bucket) => bucket.name === 'service-images');
+      
+      if (!bucketExists) {
+        const { error: createError } = await supabase.storage.createBucket('service-images', {
+          public: true,
+          fileSizeLimit: 5242880,
+        });
+
+        if (createError) {
+          console.error('Error creating bucket:', createError);
+          throw new Error('Failed to create storage bucket');
+        }
       }
       
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      console.log('Uploading file to Supabase storage bucket: service-images');
       const { error: uploadError } = await supabase.storage
         .from('service-images')
         .upload(filePath, file);
@@ -293,10 +295,7 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ initialData, onSubmit, onCanc
       return data.publicUrl;
     } catch (error) {
       console.error('Error in uploadImage function:', error);
-      toast.error('Error uploading image. Please try again.');
       throw error;
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -367,8 +366,9 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ initialData, onSubmit, onCanc
     if (useImageFallback || !imageSupported) {
       // Remove image_url from the data sent to the server if not supported
       if (!imageSupported) {
-        const { image_url, ...dataWithoutImage } = finalFormData;
-        finalFormData = dataWithoutImage as any;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { image_url: _, ...dataWithoutImage } = finalFormData;
+        finalFormData = dataWithoutImage as typeof finalFormData;
       } else {
         finalFormData.image_url = ''; 
       }
@@ -456,10 +456,12 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ initialData, onSubmit, onCanc
                 {/* Image Preview */}
                 {imagePreview && (
                   <div className="relative inline-block">
-                    <img 
+                    <Image 
                       src={imagePreview} 
                       alt="Service preview" 
                       className="w-48 h-48 object-cover rounded-md border border-gray-300"
+                      width={192}
+                      height={192}
                     />
                     <button
                       type="button"
@@ -509,24 +511,24 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ initialData, onSubmit, onCanc
             </div>
           )}
 
-          <div>
+            <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Duration*
             </label>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <div className="relative rounded-md shadow-sm">
-                  <input
-                    type="number"
+              <div className="relative rounded-md shadow-sm">
+                <input
+                  type="number"
                     value={durationFields.days}
                     onChange={(e) => handleDurationChange('days', e.target.value)}
                     min="0"
                     className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm pr-12"
-                  />
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                />
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                     <span className="text-gray-500 sm:text-sm">days</span>
-                  </div>
                 </div>
+              </div>
               </div>
               <div>
                 <div className="relative rounded-md shadow-sm">
@@ -562,7 +564,7 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ initialData, onSubmit, onCanc
             {errors.duration && (
               <p className="mt-1 text-sm text-red-600">{errors.duration}</p>
             )}
-          </div>
+            </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -745,7 +747,6 @@ const EditServiceModal: React.FC<EditServiceModalProps> = ({ isOpen, onClose, se
 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(service.image_url || null);
-  const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -811,8 +812,6 @@ const EditServiceModal: React.FC<EditServiceModalProps> = ({ isOpen, onClose, se
 
   const uploadImage = async (file: File): Promise<string> => {
     try {
-      setUploading(true);
-      
       if (!supabase) {
         throw new Error('Supabase client not initialized');
       }
@@ -825,7 +824,16 @@ const EditServiceModal: React.FC<EditServiceModalProps> = ({ isOpen, onClose, se
         throw new Error('Failed to check storage buckets');
       }
       
-      const bucketExists = buckets.some((bucket: any) => bucket.name === 'service-images');
+      interface Bucket {
+        id: string;
+        name: string;
+        owner: string;
+        created_at: string;
+        updated_at: string;
+        public: boolean;
+      }
+      
+      const bucketExists = buckets.some((bucket: Bucket) => bucket.name === 'service-images');
       
       if (!bucketExists) {
         const { error: createError } = await supabase.storage.createBucket('service-images', {
@@ -858,8 +866,6 @@ const EditServiceModal: React.FC<EditServiceModalProps> = ({ isOpen, onClose, se
     } catch (error) {
       console.error('Error in uploadImage function:', error);
       throw error;
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -894,7 +900,7 @@ const EditServiceModal: React.FC<EditServiceModalProps> = ({ isOpen, onClose, se
       return;
     }
     
-    let updatedService = { ...formData, id: service.id };
+    const updatedService = { ...formData, id: service.id };
     
     try {
       setIsSubmitting(true);
@@ -945,113 +951,115 @@ const EditServiceModal: React.FC<EditServiceModalProps> = ({ isOpen, onClose, se
       <form onSubmit={handleSubmit} className="space-y-6 p-2">
         <div className="bg-white rounded-lg">
           <div className="grid grid-cols-1 gap-6">
-            <div>
+        <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                Service Name*
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                required
-              />
-              {errors.name && (
-                <p className="mt-1 text-sm text-red-600">{errors.name}</p>
-              )}
-            </div>
+            Service Name*
+          </label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            value={formData.name}
+            onChange={handleInputChange}
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            required
+          />
+          {errors.name && (
+            <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+          )}
+        </div>
 
-            <div>
+        <div>
               <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                Description*
-              </label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
+            Description*
+          </label>
+          <textarea
+            id="description"
+            name="description"
+            value={formData.description}
+            onChange={handleInputChange}
                 rows={4}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                required
-              ></textarea>
-              {errors.description && (
-                <p className="mt-1 text-sm text-red-600">{errors.description}</p>
-              )}
-            </div>
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            required
+          ></textarea>
+          {errors.description && (
+            <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+          )}
+        </div>
 
-            {/* Only show image upload if the schema supports it */}
-            {imageSupported && (
+        {/* Only show image upload if the schema supports it */}
+        {imageSupported && (
               <div className="bg-gray-50 p-4 rounded-lg">
                 <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-2">
-                  Service Image
-                </label>
-                
-                {/* Image Preview */}
+              Service Image
+            </label>
+            
+            {/* Image Preview */}
                 <div className="flex items-center space-x-4">
-                  {imagePreview && (
+            {imagePreview && (
                     <div className="relative">
-                      <img 
-                        src={imagePreview} 
-                        alt="Service preview" 
+                      <Image 
+                  src={imagePreview} 
+                  alt="Service preview" 
                         className="w-32 h-32 object-cover rounded-lg border border-gray-300"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setImagePreview(null);
-                          setImageFile(null);
-                          setFormData(prev => ({ ...prev, image_url: '' }));
-                        }}
+                        width={128}
+                        height={128}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImagePreview(null);
+                    setImageFile(null);
+                    setFormData(prev => ({ ...prev, image_url: '' }));
+                  }}
                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 focus:outline-none shadow-sm"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                  )}
-                  
-                  {/* File Input */}
-                  <div className="flex-1">
-                    <label 
-                      htmlFor="file-upload-edit"
-                      className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    >
-                      <svg className="mr-2 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0l-4 4m4-4v12" />
-                      </svg>
-                      {imagePreview ? 'Change image' : 'Upload image'}
-                    </label>
-                    <input
-                      id="file-upload-edit"
-                      name="file-upload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="sr-only"
-                    />
-                    <p className="mt-2 text-xs text-gray-500">
-                      PNG, JPG, GIF up to 2MB
-                    </p>
-                    {uploadError && (
-                      <p className="mt-1 text-xs text-red-500">{uploadError}</p>
-                    )}
-                  </div>
-                </div>
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
             )}
+            
+            {/* File Input */}
+                  <div className="flex-1">
+              <label 
+                htmlFor="file-upload-edit"
+                      className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <svg className="mr-2 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0l-4 4m4-4v12" />
+                </svg>
+                {imagePreview ? 'Change image' : 'Upload image'}
+              </label>
+              <input
+                id="file-upload-edit"
+                name="file-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="sr-only"
+              />
+            <p className="mt-2 text-xs text-gray-500">
+              PNG, JPG, GIF up to 2MB
+            </p>
+            {uploadError && (
+              <p className="mt-1 text-xs text-red-500">{uploadError}</p>
+            )}
+                  </div>
+                </div>
+          </div>
+        )}
 
-            <div>
+        <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Duration*
-              </label>
+          </label>
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <div className="relative rounded-md shadow-sm">
-                    <input
-                      type="number"
+          <input
+            type="number"
                       value={durationFields.days}
                       onChange={(e) => handleDurationChange('days', e.target.value)}
                       min="0"
@@ -1093,77 +1101,77 @@ const EditServiceModal: React.FC<EditServiceModalProps> = ({ isOpen, onClose, se
                   </div>
                 </div>
               </div>
-              {errors.duration && (
-                <p className="mt-1 text-sm text-red-600">{errors.duration}</p>
-              )}
-            </div>
+          {errors.duration && (
+            <p className="mt-1 text-sm text-red-600">{errors.duration}</p>
+          )}
+        </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
+        <div>
                 <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
-                  Price (₹)*
-                </label>
+            Price (₹)*
+          </label>
                 <div className="relative rounded-md shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <span className="text-gray-500 sm:text-sm">₹</span>
                   </div>
-                  <input
-                    type="number"
-                    id="price"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleInputChange}
+          <input
+            type="number"
+            id="price"
+            name="price"
+            value={formData.price}
+            onChange={handleInputChange}
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 pl-7 pr-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    required
-                    min="0"
-                  />
+            required
+            min="0"
+          />
                 </div>
-                {errors.price && (
-                  <p className="mt-1 text-sm text-red-600">{errors.price}</p>
-                )}
+          {errors.price && (
+            <p className="mt-1 text-sm text-red-600">{errors.price}</p>
+          )}
               </div>
-            </div>
+        </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
+        <div>
                 <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
-                  Category*
-                </label>
-                <select
-                  id="category"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  required
-                >
-                  <option value="Wash">Wash</option>
-                  <option value="Detailing">Detailing</option>
-                  <option value="Protection">Protection</option>
-                </select>
-                {errors.category && (
-                  <p className="mt-1 text-sm text-red-600">{errors.category}</p>
-                )}
-              </div>
+            Category*
+          </label>
+          <select
+            id="category"
+            name="category"
+            value={formData.category}
+            onChange={handleInputChange}
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            required
+          >
+            <option value="Wash">Wash</option>
+            <option value="Detailing">Detailing</option>
+            <option value="Protection">Protection</option>
+          </select>
+          {errors.category && (
+            <p className="mt-1 text-sm text-red-600">{errors.category}</p>
+          )}
+        </div>
 
-              <div>
+        <div>
                 <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
-                  Status*
-                </label>
-                <select
-                  id="status"
-                  name="status"
-                  value={formData.status}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  required
-                >
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
-                {errors.status && (
-                  <p className="mt-1 text-sm text-red-600">{errors.status}</p>
-                )}
+            Status*
+          </label>
+          <select
+            id="status"
+            name="status"
+            value={formData.status}
+            onChange={handleInputChange}
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            required
+          >
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+          {errors.status && (
+            <p className="mt-1 text-sm text-red-600">{errors.status}</p>
+          )}
               </div>
             </div>
           </div>
@@ -1215,13 +1223,11 @@ export default function ServicesPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [currentService, setCurrentService] = useState<Service | null>(null);
   const router = useRouter();
-  const [submitting, setSubmitting] = useState(false);
-  const [updateError, setUpdateError] = useState<string | null>(null);
   const { user } = useAuth();
   const [sortField, setSortField] = useState<keyof Service>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [imageSupported, setImageSupported] = useState<boolean>(true);
+  const [imageSupported] = useState<boolean>(true);
 
   // Fetch services from API
   useEffect(() => {
@@ -1330,9 +1336,6 @@ export default function ServicesPage() {
     if (!currentService) return;
     
     try {
-      setSubmitting(true);
-      setUpdateError(null);
-      
       console.log('Updating service:', service);
       
       const response = await fetch(`/api/services/${currentService.id}`, {
@@ -1361,14 +1364,10 @@ export default function ServicesPage() {
       resetForm();
     } catch (error) {
       console.error('Error updating service:', error);
-      setUpdateError(error && typeof error === 'object' && 'message' in error 
+      const errorMessage = error && typeof error === 'object' && 'message' in error 
         ? error.message as string 
-        : 'Failed to update service');
-      toast.error(error && typeof error === 'object' && 'message' in error 
-        ? error.message as string 
-        : 'Failed to update service');
-    } finally {
-      setSubmitting(false);
+        : 'Failed to update service';
+      toast.error(errorMessage);
     }
   };
 
@@ -1492,12 +1491,10 @@ export default function ServicesPage() {
           onSuccess={handleUpdateService}
           onError={(error: unknown) => {
             console.error('Error updating service:', error);
-            setUpdateError(error && typeof error === 'object' && 'message' in error 
+            const errorMessage = error && typeof error === 'object' && 'message' in error 
               ? error.message as string 
-              : 'Failed to update service');
-            toast.error(error && typeof error === 'object' && 'message' in error 
-              ? error.message as string 
-              : 'Failed to update service');
+              : 'Failed to update service';
+            toast.error(errorMessage);
           }}
           imageSupported={imageSupported}
         />
@@ -1643,10 +1640,12 @@ export default function ServicesPage() {
                         {/* Only show image if the service has an image_url property */}
                         {service.image_url ? (
                           <div className="h-16 w-16 flex-shrink-0 mr-4">
-                            <img 
-                              className="h-16 w-16 rounded-md object-cover" 
+                            <Image 
+                              className="rounded-md object-cover" 
                               src={service.image_url} 
                               alt={service.name} 
+                              width={64}
+                              height={64}
                             />
                           </div>
                         ) : (

@@ -1,9 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useSupabase } from './SupabaseContext';
-import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 
 // Types
 type User = {
@@ -20,6 +18,10 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{
     error: string | null;
     success: boolean;
+  }>;
+  signUp: (email: string, password: string) => Promise<{
+    error: string | null;
+    user: User | null;
   }>;
   signOut: () => Promise<void>;
   refreshAuthState: () => Promise<void>;
@@ -50,7 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   });
 
-  const refreshAuthState = async () => {
+  const refreshAuthState = useCallback(async () => {
     if (!supabase) {
       console.error('Supabase client not available');
       setError('Authentication service unavailable. Please check your connection.');
@@ -103,7 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setLoading(false);
     }
-  };
+  }, [supabase]);
 
   useEffect(() => {
     if (!isInitialized) {
@@ -114,7 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     refreshAuthState();
 
     // Subscribe to auth changes
-    let authListener: any;
+    let authListener: { subscription: { unsubscribe: () => void } } | null = null;
     
     if (supabase) {
       try {
@@ -161,7 +163,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         authListener.subscription.unsubscribe();
       }
     };
-  }, [supabase, isInitialized]);
+  }, [supabase, isInitialized, refreshAuthState]);
 
   const signIn = async (email: string, password: string) => {
     if (!supabase) {
@@ -265,6 +267,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const signUp = async (email: string, password: string) => {
+    if (!supabase) {
+      console.error('Supabase client not available for sign up');
+      return { 
+        error: 'Authentication service unavailable. Please try again later.',
+        user: null
+      };
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log(`Attempting to sign up with email: ${email}`);
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error('Sign up error:', error);
+        setError(error.message);
+        return { error: error.message, user: null };
+      }
+
+      console.log('Sign up successful, verification email sent');
+      
+      return { error: null, user: data?.user || null };
+    } catch (err) {
+      console.error('Unexpected sign up error:', err);
+      const errorMessage = err instanceof Error 
+        ? err.message
+        : 'An unexpected error occurred during sign up.';
+      setError(errorMessage);
+      return { error: errorMessage, user: null };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -273,6 +316,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         error,
         signIn,
+        signUp,
         signOut,
         refreshAuthState
       }}

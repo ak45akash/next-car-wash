@@ -14,7 +14,7 @@ export default function ProtectedRoute({
 }) {
   const router = useRouter();
   const { user, loading, isAdmin } = useAuth();
-  const { supabase, isInitialized } = useSupabase();
+  const { isInitialized } = useSupabase();
   const [checkedAuth, setCheckedAuth] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [redirectInProgress, setRedirectInProgress] = useState(false);

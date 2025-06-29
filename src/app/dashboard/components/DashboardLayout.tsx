@@ -2,7 +2,7 @@
 
 import React, { useState, ReactNode } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { 
   FaTachometerAlt, 
   FaCalendar, 
@@ -59,8 +59,7 @@ const navItems = [
 export default function DashboardLayout({ children, adminOnly = false }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-  const { user, signOut, isAdmin } = useAuth();
-  const router = useRouter();
+  const { user, signOut, isAdmin, loading } = useAuth();
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -81,6 +80,29 @@ export default function DashboardLayout({ children, adminOnly = false }: Dashboa
       .toUpperCase()
       .substring(0, 2);
   };
+
+  // Check if this is an admin-only page and user is not an admin
+  if (adminOnly && !loading && !isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8 text-center">
+          <div>
+            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+              Admin Access Required
+            </h2>
+            <p className="mt-2 text-center text-sm text-gray-600">
+              You need administrator privileges to access this page.
+            </p>
+          </div>
+          <div>
+            <Link href="/dashboard" className="text-blue-600 hover:text-blue-800">
+              Return to Dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <ProtectedRoute adminOnly={adminOnly}>

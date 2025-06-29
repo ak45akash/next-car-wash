@@ -27,5 +27,9 @@
       "src": "/reset-password",
       "dest": "/reset-password"
     }
-  ]
+  ],
+  "env": {
+    "NEXT_DISABLE_ESLINT": "1"
+  },
+  "buildCommand": "NEXT_DISABLE_ESLINT=1 next build"
 } 

@@ -1,10 +1,15 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
 // GET handler to fetch all settings
 export async function GET() {
   try {
     console.log('Fetching all settings');
+    
+    if (!supabase) {
+      return NextResponse.json({ error: 'Database connection not available' }, { status: 503 });
+    }
+    
     const { data, error } = await supabase
       .from('settings')
       .select('*');
@@ -15,15 +20,16 @@ export async function GET() {
     }
     
     // Create a structured object from the array of settings
-    const settingsObject: Record<string, any> = {};
+    const settingsObject: Record<string, string | number | boolean | object | null> = {};
     data.forEach((setting) => {
       try {
         // Parse the value as JSON if it's a JSON string
         settingsObject[setting.key] = typeof setting.value === 'string' && setting.value.trim().startsWith('{') 
           ? JSON.parse(setting.value) 
           : setting.value;
-      } catch (e) {
+      } catch (parseError) {
         // If parsing fails, use the raw value
+        console.log(`Failed to parse setting ${setting.key} as JSON:`, parseError);
         settingsObject[setting.key] = setting.value;
       }
     });
@@ -45,13 +51,17 @@ export async function GET() {
 }
 
 // POST handler to update or create settings
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const settingsData = await request.json();
     
     // Validate required fields
     if (!settingsData.key || settingsData.value === undefined) {
       return NextResponse.json({ error: 'Key and value are required' }, { status: 400 });
+    }
+    
+    if (!supabase) {
+      return NextResponse.json({ error: 'Database connection not available' }, { status: 503 });
     }
     
     // Use upsert to create or update
@@ -67,6 +77,10 @@ export async function POST(request: Request) {
     
     return NextResponse.json(data);
   } catch (err) {
-    return NextResponse.json({ error: 'Failed to update settings' }, { status: 500 });
+    console.error('Failed to update settings:', err);
+    return NextResponse.json({ 
+      error: 'Failed to update settings',
+      details: err instanceof Error ? err.message : 'Unknown error'
+    }, { status: 500 });
   }
 } 

@@ -30,9 +30,9 @@ export default function BookingClosureNotice() {
         <p className="text-sm mt-1 flex items-center">
           <FaClock className="mr-1 text-red-500" />
           {remainingTime ? (
-            <>We'll be accepting new bookings in <span className="font-medium">{remainingTime}</span></>
+            <>We&apos;ll be accepting new bookings in <span className="font-medium">{remainingTime}</span></>
           ) : (
-            <>Bookings are temporarily unavailable. Please check back later.</>
+            <>We&apos;re currently not accepting new bookings. Please check back later or contact us for more information.</>
           )}
         </p>
       </div>

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
-import { FaDownload, FaCalendarAlt } from 'react-icons/fa';
+import { FaFileDownload } from 'react-icons/fa';
 
 // Mock data for reports
 const revenueData = [
@@ -79,7 +79,7 @@ export default function ReportsPage() {
             <option value="csv">CSV Format</option>
           </select>
           <button className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-            <FaDownload className="mr-2 -ml-1 h-4 w-4" />
+            <FaFileDownload className="mr-2 -ml-1 h-4 w-4" />
             Download
           </button>
         </div>
