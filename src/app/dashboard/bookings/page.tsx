@@ -33,7 +33,29 @@ export default function BookingsPage() {
   const [showClosureModal, setShowClosureModal] = useState(false);
   
   // Use the booking closure context
-  const { isClosed, remainingTime, closeBookings, reopenBookings } = useBookingClosure();
+  const { isClosed, closureEndTime, closeBookings, reopenBookings } = useBookingClosure();
+
+  // Calculate remaining time
+  const getRemainingTime = () => {
+    if (!closureEndTime) return null;
+    
+    const now = new Date();
+    const endTime = new Date(closureEndTime);
+    const diffMs = endTime.getTime() - now.getTime();
+    
+    if (diffMs <= 0) return null;
+    
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (hours > 0) {
+      return `${hours} hour${hours !== 1 ? 's' : ''} and ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    } else {
+      return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    }
+  };
+
+  const remainingTime = getRemainingTime();
   
   // Fetch bookings from API
   useEffect(() => {

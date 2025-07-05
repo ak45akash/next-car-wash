@@ -16,10 +16,10 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-white shadow-md py-4">
+    <nav className="bg-white/95 backdrop-blur-sm shadow-md py-4 sticky top-0 z-40 transition-all duration-300">
       <div className="container-custom flex justify-between items-center">
-        <Link href="/" className="flex items-center">
-          <div className="relative h-12 w-12 mr-3">
+        <Link href="/" className="flex items-center group">
+          <div className="relative h-12 w-12 mr-3 transition-transform duration-300 group-hover:scale-110">
             <Image
               src="/logo.png"
               alt="Diamond Steam Car Wash Logo"
@@ -30,8 +30,8 @@ export default function Navbar() {
             />
           </div>
           <div>
-            <span className="text-xl font-bold text-blue-600 block leading-tight">Diamond</span>
-            <span className="text-gray-600 text-sm block leading-tight">Steam Car Wash</span>
+            <span className="text-xl font-bold text-blue-600 block leading-tight group-hover:text-blue-700 transition-colors duration-300">Diamond</span>
+            <span className="text-gray-600 text-sm block leading-tight group-hover:text-gray-700 transition-colors duration-300">Steam Car Wash</span>
           </div>
         </Link>
 
@@ -40,32 +40,32 @@ export default function Navbar() {
           <Link 
             href="/" 
             className={isActiveLink('/') 
-              ? "text-blue-600 font-bold transition-colors duration-300" 
-              : "text-gray-600 font-medium hover:text-blue-600 transition-colors duration-300"}
+              ? "text-blue-600 font-bold transition-all duration-300 relative after:content-[''] after:absolute after:bottom-[-4px] after:left-0 after:w-full after:h-0.5 after:bg-blue-600" 
+              : "text-gray-600 font-medium hover:text-blue-600 transition-all duration-300 relative hover:transform hover:scale-105"}
           >
             Home
           </Link>
           <Link 
             href="/services" 
             className={isActiveLink('/services') 
-              ? "text-blue-600 font-bold transition-colors duration-300" 
-              : "text-gray-600 font-medium hover:text-blue-600 transition-colors duration-300"}
+              ? "text-blue-600 font-bold transition-all duration-300 relative after:content-[''] after:absolute after:bottom-[-4px] after:left-0 after:w-full after:h-0.5 after:bg-blue-600" 
+              : "text-gray-600 font-medium hover:text-blue-600 transition-all duration-300 relative hover:transform hover:scale-105"}
           >
             Services
           </Link>
           <Link 
             href="/about" 
             className={isActiveLink('/about') 
-              ? "text-blue-600 font-bold transition-colors duration-300" 
-              : "text-gray-600 font-medium hover:text-blue-600 transition-colors duration-300"}
+              ? "text-blue-600 font-bold transition-all duration-300 relative after:content-[''] after:absolute after:bottom-[-4px] after:left-0 after:w-full after:h-0.5 after:bg-blue-600" 
+              : "text-gray-600 font-medium hover:text-blue-600 transition-all duration-300 relative hover:transform hover:scale-105"}
           >
             About
           </Link>
           <Link 
             href="/contact" 
             className={isActiveLink('/contact') 
-              ? "text-blue-600 font-bold transition-colors duration-300" 
-              : "text-gray-600 font-medium hover:text-blue-600 transition-colors duration-300"}
+              ? "text-blue-600 font-bold transition-all duration-300 relative after:content-[''] after:absolute after:bottom-[-4px] after:left-0 after:w-full after:h-0.5 after:bg-blue-600" 
+              : "text-gray-600 font-medium hover:text-blue-600 transition-all duration-300 relative hover:transform hover:scale-105"}
           >
             Contact
           </Link>
@@ -141,8 +141,8 @@ export default function Navbar() {
           <Link 
             href="/book" 
             className={isActiveLink('/book')
-              ? "bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors ring-2 ring-blue-300"
-              : "bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"}
+              ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-full hover:from-blue-700 hover:to-blue-800 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl ring-2 ring-blue-300"
+              : "bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-full hover:from-blue-700 hover:to-blue-800 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"}
           >
             Book Now
           </Link>

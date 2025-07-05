@@ -125,7 +125,7 @@ describe('Service Pre-selection Feature', () => {
       }
       
       // Simulate default settings fallback
-      const settings = undefined || defaultSettings
+      const settings = defaultSettings
       
       expect(settings.showDuration).toBe(true)
       expect(settings.showCategory).toBe(true)

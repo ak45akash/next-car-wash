@@ -392,17 +392,7 @@ const BookingForm = ({ preselectedServiceId }: BookingFormProps) => {
             <label className="block text-gray-700 mb-4 font-medium">
               Payment Method <span className="text-red-500">*</span>
             </label>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <label className="relative flex items-center p-4 border rounded-md cursor-pointer hover:bg-gray-50">
-                <input
-                  type="radio"
-                  value="cash"
-                  className="mr-2"
-                  {...register('paymentMethod', { required: 'Payment method is required' })}
-                />
-                <span className="ml-2">Pay at Location</span>
-              </label>
-              
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <label className="relative flex items-center p-4 border rounded-md cursor-pointer hover:bg-gray-50">
                 <input
                   type="radio"

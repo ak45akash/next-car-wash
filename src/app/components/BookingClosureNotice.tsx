@@ -5,7 +5,29 @@ import { FaCalendarTimes, FaClock, FaSpinner } from 'react-icons/fa';
 import { useBookingClosure } from '../contexts/BookingClosureContext';
 
 export default function BookingClosureNotice() {
-  const { isClosed, remainingTime, isLoading } = useBookingClosure();
+  const { isClosed, closureEndTime, isLoading } = useBookingClosure();
+
+  // Calculate remaining time
+  const getRemainingTime = () => {
+    if (!closureEndTime) return null;
+    
+    const now = new Date();
+    const endTime = new Date(closureEndTime);
+    const diffMs = endTime.getTime() - now.getTime();
+    
+    if (diffMs <= 0) return null;
+    
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (hours > 0) {
+      return `${hours} hour${hours !== 1 ? 's' : ''} and ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    } else {
+      return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    }
+  };
+
+  const remainingTime = getRemainingTime();
 
   if (isLoading) {
     return (
