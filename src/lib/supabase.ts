@@ -4,17 +4,13 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// Debug environment variables
-if (!supabaseUrl) {
+// Debug environment variables (development only)
+const isDev = process.env.NODE_ENV === 'development';
+if (isDev && !supabaseUrl) {
   console.error('NEXT_PUBLIC_SUPABASE_URL is not set in environment variables');
-} else {
-  console.log('NEXT_PUBLIC_SUPABASE_URL is set:', supabaseUrl.substring(0, 10) + '...');
 }
-
-if (!supabaseAnonKey) {
+if (isDev && !supabaseAnonKey) {
   console.error('NEXT_PUBLIC_SUPABASE_ANON_KEY is not set in environment variables');
-} else {
-  console.log('NEXT_PUBLIC_SUPABASE_ANON_KEY is set:', supabaseAnonKey.substring(0, 5) + '...');
 }
 
 // Default supabase client - initialize with safer checks
@@ -40,7 +36,6 @@ export function initSupabaseClient(): SupabaseClient | null {
     });
     
     supabase = client;
-    console.log('Supabase client initialized successfully');
     return client;
   } catch (error) {
     console.error('Error initializing Supabase client:', error);
@@ -54,14 +49,9 @@ initSupabaseClient();
 // Helper functions with fallbacks for when Supabase is not available
 export async function getBookings() {
   try {
-    console.log('Fetching bookings from Supabase...');
-    
     if (!supabase) {
       supabase = initSupabaseClient();
-      if (!supabase) {
-        console.error('Supabase client not available');
-        return [];
-      }
+      if (!supabase) return [];
     }
     
     const { data, error } = await supabase
@@ -74,11 +64,12 @@ export async function getBookings() {
       throw error;
     }
     
-    console.log(`Successfully fetched ${data?.length || 0} bookings`);
     return data || [];
   } catch (err) {
-    console.error('Exception in getBookings:', err);
-    return []; // Return empty array instead of throwing error
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Exception in getBookings:', err);
+    }
+    return [];
   }
 }
 
@@ -204,6 +195,8 @@ interface BookingData {
   date: string;
   time_slot: string;
   status?: string;
+  payment_status?: string;
+  payment_method?: string;
   created_at?: string;
   // Use Record<string, unknown> instead of any for additional fields
   [key: string]: string | number | boolean | object | null | undefined;
@@ -216,13 +209,43 @@ export async function createBooking(bookingData: BookingData) {
       return null;
     }
     
+    // Map request payload to actual DB columns
+    const insertPayload = {
+      customer_name: bookingData.customer_name,
+      email: bookingData.customer_email, // DB column is 'email'
+      phone: bookingData.customer_phone, // DB column is 'phone'
+      car_model: bookingData.car_model,
+      service_id: bookingData.service_id?.toString(),
+      service_name: bookingData.service_name,
+      service_price: bookingData.service_price,
+      date: bookingData.date,
+      time_slot: bookingData.time_slot,
+      status: bookingData.status ?? 'Upcoming',
+      payment_method: bookingData.payment_method,
+      payment_status: bookingData.payment_status ?? 'Pending',
+      upi_id: (bookingData.upi_id as string | null) ?? null,
+      created_at: bookingData.created_at ?? new Date().toISOString(),
+    };
+
     const { data, error } = await supabase
       .from('bookings')
-      .insert([bookingData])
+      .insert([insertPayload])
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      // Fallback: ask server to create with service role key
+      const resp = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(insertPayload)
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || error.message);
+      }
+      return await resp.json();
+    }
     return data;
   } catch (err) {
     console.error('Error in createBooking:', err);

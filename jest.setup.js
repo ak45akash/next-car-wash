@@ -1,6 +1,19 @@
 // Extend Jest matchers with @testing-library/jest-dom
 import '@testing-library/jest-dom'
 
+// Polyfill Web APIs for Next.js server modules in tests
+import { TextEncoder, TextDecoder } from 'util'
+Object.assign(global, { TextEncoder, TextDecoder })
+
+jest.mock('next/server', () => ({
+  NextResponse: {
+    json: (body, init) => ({
+      status: init?.status || 200,
+      json: async () => body,
+    }),
+  },
+}))
+
 // Mock Next.js router
 jest.mock('next/navigation', () => ({
   useRouter() {

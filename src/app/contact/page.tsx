@@ -34,15 +34,23 @@ export default function ContactPage() {
       return;
     }
     
-    // Simulate form submission
+    // Submit to API
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log('Form submitted:', formData);
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to send message');
+      }
+
       setFormData({ name: '', email: '', phone: '', message: '' });
       setSubmitted(true);
     } catch (err) {
-      console.log(err);
-      setError('An error occurred. Please try again.');
+      setError(err instanceof Error ? err.message : 'An error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

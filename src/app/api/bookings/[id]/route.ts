@@ -1,32 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { getServiceSupabase } from '@/lib/supabase-server';
+import { requireAdmin } from '@/lib/admin-auth';
+
+function createServerClient() {
+  return getServiceSupabase();
+}
 
 // GET a single booking by ID
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    
-    if (!supabase) {
-      return NextResponse.json({ error: 'Database connection not available' }, { status: 503 });
+    const serverClient = createServerClient();
+
+    if (!serverClient) {
+      return NextResponse.json({ error: 'Server is not configured with Supabase service credentials' }, { status: 500 });
     }
-    
-    const { data, error } = await supabase
+
+    const { data, error } = await serverClient
       .from('bookings')
       .select('*')
       .eq('id', id)
       .single();
-    
+
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    
+
     if (!data) {
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
     }
-    
+
     return NextResponse.json(data);
   } catch (err) {
     console.error('Unexpected error:', err);
@@ -40,27 +46,31 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireAdmin();
+    if ('error' in auth) return auth.error;
+
     const { id } = await params;
     const updates = await request.json();
-    
-    if (!supabase) {
+    const serverClient = auth.serviceClient;
+
+    if (!serverClient) {
       return NextResponse.json({ error: 'Database connection not available' }, { status: 503 });
     }
-    
-    const { data, error } = await supabase
+
+    const { data, error } = await serverClient
       .from('bookings')
       .update(updates)
       .eq('id', id)
       .select();
-    
+
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    
-    if (data.length === 0) {
+
+    if (!data || data.length === 0) {
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
     }
-    
+
     return NextResponse.json(data[0]);
   } catch (err) {
     console.error('Unexpected error:', err);
@@ -70,28 +80,32 @@ export async function PATCH(
 
 // DELETE a booking
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireAdmin();
+    if ('error' in auth) return auth.error;
+
     const { id } = await params;
-    
-    if (!supabase) {
+    const serverClient = auth.serviceClient;
+
+    if (!serverClient) {
       return NextResponse.json({ error: 'Database connection not available' }, { status: 503 });
     }
-    
-    const { error } = await supabase
+
+    const { error } = await serverClient
       .from('bookings')
       .delete()
       .eq('id', id);
-    
+
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    
+
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {
     console.error('Unexpected error:', err);
     return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 });
   }
-} 
+}

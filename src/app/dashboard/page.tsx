@@ -6,25 +6,81 @@ import DashboardCard from './components/DashboardCard';
 import { FaCar, FaClock, FaUserFriends, FaDollarSign } from 'react-icons/fa';
 import ProtectedRoute from '../components/ProtectedRoute';
 
+interface DashboardStats {
+  todayBookings: number;
+  totalCustomers: number;
+  serviceInProgress: number;
+  totalRevenue: number;
+  bookingsChange: number;
+  customersChange: number;
+  revenueChange: number;
+}
+
+interface RecentBooking {
+  id: number;
+  customer_name: string;
+  service: string;
+  time: string;
+  status: string;
+}
+
+interface PopularService {
+  name: string;
+  count: number;
+  percentage: number;
+}
+
+function formatChange(value: number, prefix = '') {
+  if (value === 0) return '';
+  const sign = value > 0 ? '+' : '';
+  return `${sign}${prefix}${value.toLocaleString()}`;
+}
+
+function getStatusClass(status: string) {
+  switch (status.toLowerCase()) {
+    case 'completed':
+      return 'bg-green-100 text-green-800';
+    case 'in progress':
+    case 'in-progress':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'cancelled':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-blue-100 text-blue-800';
+  }
+}
+
 export default function Dashboard() {
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<DashboardStats>({
     todayBookings: 0,
     totalCustomers: 0,
     serviceInProgress: 0,
-    totalRevenue: 0
+    totalRevenue: 0,
+    bookingsChange: 0,
+    customersChange: 0,
+    revenueChange: 0,
   });
+  const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
+  const [popularServices, setPopularServices] = useState<PopularService[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // This would be replaced with actual API calls
   useEffect(() => {
-    // Simulating API call to fetch stats
-    setTimeout(() => {
-      setStats({
-        todayBookings: 8,
-        totalCustomers: 145,
-        serviceInProgress: 3,
-        totalRevenue: 12500
-      });
-    }, 1000);
+    async function fetchStats() {
+      try {
+        const response = await fetch('/api/dashboard/stats');
+        if (!response.ok) throw new Error('Failed to fetch stats');
+        const data = await response.json();
+        setStats(data.stats);
+        setRecentBookings(data.recentBookings || []);
+        setPopularServices(data.popularServices || []);
+      } catch (err) {
+        console.error('Error fetching dashboard stats:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchStats();
   }, []);
 
   return (
@@ -38,30 +94,30 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <DashboardCard 
             title="Today's Bookings"
-            value={stats.todayBookings.toString()}
+            value={loading ? '...' : stats.todayBookings.toString()}
             icon={<FaClock className="w-8 h-8 text-blue-600" />}
-            change="+2 from yesterday"
-            positive={true}
+            change={stats.bookingsChange !== 0 ? `${formatChange(stats.bookingsChange)} from yesterday` : ''}
+            positive={stats.bookingsChange >= 0}
           />
           <DashboardCard 
             title="Total Customers"
-            value={stats.totalCustomers.toString()}
+            value={loading ? '...' : stats.totalCustomers.toString()}
             icon={<FaUserFriends className="w-8 h-8 text-green-600" />}
-            change="+12 this week"
+            change={stats.customersChange > 0 ? `+${stats.customersChange} this week` : ''}
             positive={true}
           />
           <DashboardCard 
             title="Services in Progress"
-            value={stats.serviceInProgress.toString()}
+            value={loading ? '...' : stats.serviceInProgress.toString()}
             icon={<FaCar className="w-8 h-8 text-yellow-600" />}
             change=""
           />
           <DashboardCard 
             title="Total Revenue"
-            value={`₹${stats.totalRevenue.toLocaleString()}`}
+            value={loading ? '...' : `₹${stats.totalRevenue.toLocaleString()}`}
             icon={<FaDollarSign className="w-8 h-8 text-purple-600" />}
-            change="+₹1,500 from yesterday"
-            positive={true}
+            change={stats.revenueChange !== 0 ? `${formatChange(stats.revenueChange, '₹')} from yesterday` : ''}
+            positive={stats.revenueChange >= 0}
           />
         </div>
 
@@ -79,48 +135,32 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  <tr>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">Rahul Sharma</div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">Premium Wash</div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">10:30 AM</div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Completed</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">Priya Patel</div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">Interior Detailing</div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">11:45 AM</div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">In Progress</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">Amit Singh</div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">Ceramic Coating</div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">1:30 PM</div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Upcoming</span>
-                    </td>
-                  </tr>
+                  {recentBookings.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-6 text-center text-sm text-gray-500">
+                        {loading ? 'Loading bookings...' : 'No recent bookings'}
+                      </td>
+                    </tr>
+                  ) : (
+                    recentBookings.map((booking) => (
+                      <tr key={booking.id}>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{booking.customer_name}</div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{booking.service}</div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{booking.time}</div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(booking.status)}`}>
+                            {booking.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -129,65 +169,27 @@ export default function Dashboard() {
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold mb-4">Popular Services</h2>
             <div className="space-y-4">
-              <div className="flex items-center">
-                <div className="w-full flex-1">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-700">Premium Wash</span>
-                    <span className="text-sm font-medium text-gray-700">45%</span>
+              {popularServices.length === 0 ? (
+                <p className="text-sm text-gray-500">{loading ? 'Loading...' : 'No service data yet'}</p>
+              ) : (
+                popularServices.map((service) => (
+                  <div key={service.name} className="flex items-center">
+                    <div className="w-full flex-1">
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm font-medium text-gray-700">{service.name}</span>
+                        <span className="text-sm font-medium text-gray-700">{service.percentage}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${service.percentage}%` }}></div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: '45%' }}></div>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center">
-                <div className="w-full flex-1">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-700">Interior Detailing</span>
-                    <span className="text-sm font-medium text-gray-700">25%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: '25%' }}></div>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center">
-                <div className="w-full flex-1">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-700">Ceramic Coating</span>
-                    <span className="text-sm font-medium text-gray-700">15%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: '15%' }}></div>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center">
-                <div className="w-full flex-1">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-700">Express Wash</span>
-                    <span className="text-sm font-medium text-gray-700">10%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: '10%' }}></div>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center">
-                <div className="w-full flex-1">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-700">Full Detailing</span>
-                    <span className="text-sm font-medium text-gray-700">5%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: '5%' }}></div>
-                  </div>
-                </div>
-              </div>
+                ))
+              )}
             </div>
           </div>
         </div>
       </DashboardLayout>
     </ProtectedRoute>
   );
-} 
+}

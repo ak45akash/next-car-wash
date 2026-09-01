@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { requireAdmin } from '@/lib/admin-auth';
 
 // GET display options setting
 export async function GET() {
@@ -77,6 +78,9 @@ export async function GET() {
 // PUT to update display options setting
 export async function PUT(request: Request) {
   try {
+    const auth = await requireAdmin();
+    if ('error' in auth) return auth.error;
+
     const body = await request.json();
     
     if (body.value === undefined) {
@@ -88,15 +92,10 @@ export async function PUT(request: Request) {
       ? JSON.stringify(body.value) 
       : body.value;
     
-    if (!supabase) {
-      return NextResponse.json(
-        { error: 'Database connection not available. Please check your environment variables.' },
-        { status: 503 }
-      );
-    }
-    
+    const { serviceClient } = auth;
+
     // First try to update existing record
-    let { data, error } = await supabase
+    let { data, error } = await serviceClient
       .from('settings')
       .update({ value: valueString })
       .eq('key', 'display_options')
@@ -105,7 +104,7 @@ export async function PUT(request: Request) {
     
     // If no record was updated, create a new one
     if (error && (error.code === 'PGRST116' || error.message.includes('not found'))) {
-      const insertResult = await supabase
+      const insertResult = await serviceClient
         .from('settings')
         .insert([{ key: 'display_options', value: valueString }])
         .select()

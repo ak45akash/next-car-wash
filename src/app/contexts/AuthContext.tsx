@@ -38,19 +38,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Add debug logging
-  console.log('AuthContext - Initial state:', {
-    userExists: !!user,
-    isAdmin,
-    loading,
-    error,
-    supabaseInitialized: isInitialized,
-    environmentInfo: {
-      isProduction: process.env.NODE_ENV === 'production',
-      isVercel: !!process.env.VERCEL,
-      baseUrl: typeof window !== 'undefined' ? window.location.origin : 'server-side'
-    }
-  });
+  // Add debug logging in development only
+  if (process.env.NODE_ENV === 'development') {
+    console.log('AuthContext - Initial state:', {
+      userExists: !!user,
+      isAdmin,
+      loading,
+    });
+  }
 
   const refreshAuthState = useCallback(async () => {
     if (!supabase) {

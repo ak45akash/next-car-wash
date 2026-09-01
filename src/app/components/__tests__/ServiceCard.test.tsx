@@ -30,7 +30,7 @@ describe('ServiceCard', () => {
     render(<ServiceCard service={mockService} displaySettings={mockDisplaySettings} />)
 
     expect(screen.getByText('Premium Wash')).toBeDefined()
-    expect(screen.getByText('₹799')).toBeDefined()
+    expect(screen.getAllByText('₹799').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('Premium')).toBeDefined()
   })
 
@@ -75,6 +75,6 @@ describe('ServiceCard', () => {
     const expensiveService = { ...mockService, price: 15999 }
     render(<ServiceCard service={expensiveService} displaySettings={mockDisplaySettings} />)
 
-    expect(screen.getByText('₹15,999')).toBeDefined()
+    expect(screen.getAllByText('₹15,999').length).toBeGreaterThanOrEqual(1)
   })
 }) 

@@ -1,51 +1,99 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
-import { FaFileDownload } from 'react-icons/fa';
+import { FaFileDownload, FaSpinner } from 'react-icons/fa';
 
-// Mock data for reports
-const revenueData = [
-  { month: 'Jan', amount: 45000 },
-  { month: 'Feb', amount: 52000 },
-  { month: 'Mar', amount: 61000 },
-  { month: 'Apr', amount: 58000 },
-  { month: 'May', amount: 63000 },
-  { month: 'Jun', amount: 72000 },
-  { month: 'Jul', amount: 85000 },
-  { month: 'Aug', amount: 93000 },
-  { month: 'Sep', amount: 80000 },
-  { month: 'Oct', amount: 77000 },
-  { month: 'Nov', amount: 82000 },
-  { month: 'Dec', amount: 91000 }
-];
+interface RevenueItem {
+  month: string;
+  amount: number;
+}
 
-const servicePopularityData = [
-  { name: 'Premium Wash', count: 320, percentage: 40 },
-  { name: 'Interior Detailing', count: 180, percentage: 22.5 },
-  { name: 'Express Wash', count: 150, percentage: 18.75 },
-  { name: 'Ceramic Coating', count: 80, percentage: 10 },
-  { name: 'Full Detailing', count: 70, percentage: 8.75 }
-];
+interface ServicePopularity {
+  name: string;
+  count: number;
+  percentage: number;
+}
 
-const customerSatisfactionData = {
-  excellent: 63,
-  good: 28,
-  average: 7,
-  poor: 2
-};
+interface SatisfactionData {
+  excellent: number;
+  good: number;
+  average: number;
+  poor: number;
+}
 
 export default function ReportsPage() {
   const [reportPeriod, setReportPeriod] = useState('yearly');
-  const [downloadFormat, setDownloadFormat] = useState('pdf');
+  const [downloadFormat, setDownloadFormat] = useState('csv');
+  const [isLoading, setIsLoading] = useState(true);
+  const [revenueData, setRevenueData] = useState<RevenueItem[]>([]);
+  const [servicePopularityData, setServicePopularityData] = useState<ServicePopularity[]>([]);
+  const [customerSatisfactionData, setCustomerSatisfactionData] = useState<SatisfactionData>({
+    excellent: 0,
+    good: 0,
+    average: 0,
+    poor: 0,
+  });
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [totalServices, setTotalServices] = useState(0);
 
-  // Calculate totals
-  const totalRevenue = revenueData.reduce((sum, item) => sum + item.amount, 0);
-  const totalServices = servicePopularityData.reduce((sum, item) => sum + item.count, 0);
-  
-  // Find max revenue month for display
-  const maxRevenueMonth = revenueData.reduce((max, item) => 
-    item.amount > max.amount ? item : max, revenueData[0]);
+  useEffect(() => {
+    async function fetchReports() {
+      try {
+        setIsLoading(true);
+        const response = await fetch(`/api/reports?period=${reportPeriod}`);
+        if (!response.ok) throw new Error('Failed to fetch reports');
+        const data = await response.json();
+        setRevenueData(data.revenueData || []);
+        setServicePopularityData(data.servicePopularityData || []);
+        setCustomerSatisfactionData(data.customerSatisfactionData || { excellent: 0, good: 0, average: 0, poor: 0 });
+        setTotalRevenue(data.totalRevenue || 0);
+        setTotalServices(data.totalServices || 0);
+      } catch (err) {
+        console.error('Error fetching reports:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchReports();
+  }, [reportPeriod]);
+
+  const maxRevenueMonth = revenueData.length > 0
+    ? revenueData.reduce((max, item) => (item.amount > max.amount ? item : max), revenueData[0])
+    : { month: '—', amount: 0 };
+
+  const maxRevenue = Math.max(...revenueData.map((r) => r.amount), 1);
+
+  const handleDownload = () => {
+    if (downloadFormat === 'csv') {
+      const rows = [
+        ['Month', 'Revenue'],
+        ...revenueData.map((r) => [r.month, r.amount]),
+        [],
+        ['Service', 'Bookings', 'Percentage'],
+        ...servicePopularityData.map((s) => [s.name, s.count, s.percentage]),
+      ];
+      const csv = rows.map((row) => row.join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `report-${reportPeriod}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex justify-center items-center py-24">
+          <FaSpinner className="animate-spin h-8 w-8 text-blue-600" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -74,26 +122,24 @@ export default function ReportsPage() {
             value={downloadFormat}
             onChange={(e) => setDownloadFormat(e.target.value)}
           >
+            <option value="csv">CSV Format</option>
             <option value="pdf">PDF Format</option>
             <option value="excel">Excel Format</option>
-            <option value="csv">CSV Format</option>
           </select>
-          <button className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+          <button
+            onClick={handleDownload}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
             <FaFileDownload className="mr-2 -ml-1 h-4 w-4" />
             Download
           </button>
         </div>
       </div>
 
-      {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Total Revenue</h3>
           <p className="text-3xl font-bold text-gray-900">₹{totalRevenue.toLocaleString()}</p>
-          <div className="flex items-center mt-2 text-sm">
-            <span className="text-green-600 font-medium">+12.5% </span>
-            <span className="text-gray-500 ml-1">from previous period</span>
-          </div>
           <p className="mt-4 text-sm text-gray-600">
             <span className="font-medium">Best month: </span>
             {maxRevenueMonth.month} (₹{maxRevenueMonth.amount.toLocaleString()})
@@ -103,31 +149,24 @@ export default function ReportsPage() {
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Services Performed</h3>
           <p className="text-3xl font-bold text-gray-900">{totalServices}</p>
-          <div className="flex items-center mt-2 text-sm">
-            <span className="text-green-600 font-medium">+8.3% </span>
-            <span className="text-gray-500 ml-1">from previous period</span>
-          </div>
-          <p className="mt-4 text-sm text-gray-600">
-            <span className="font-medium">Most popular: </span>
-            {servicePopularityData[0].name} ({servicePopularityData[0].percentage}%)
-          </p>
+          {servicePopularityData[0] && (
+            <p className="mt-4 text-sm text-gray-600">
+              <span className="font-medium">Most popular: </span>
+              {servicePopularityData[0].name} ({servicePopularityData[0].percentage}%)
+            </p>
+          )}
         </div>
         
         <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Customer Satisfaction</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Booking Status</h3>
           <p className="text-3xl font-bold text-gray-900">{customerSatisfactionData.excellent + customerSatisfactionData.good}%</p>
-          <div className="flex items-center mt-2 text-sm">
-            <span className="text-green-600 font-medium">+5.2% </span>
-            <span className="text-gray-500 ml-1">from previous period</span>
-          </div>
           <p className="mt-4 text-sm text-gray-600">
-            <span className="font-medium">Excellent ratings: </span>
+            <span className="font-medium">Completed: </span>
             {customerSatisfactionData.excellent}%
           </p>
         </div>
       </div>
 
-      {/* Revenue Chart */}
       <div className="bg-white rounded-lg shadow mb-8">
         <div className="p-6 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-800">Revenue Trends</h3>
@@ -136,21 +175,19 @@ export default function ReportsPage() {
           <div className="h-64 w-full">
             <div className="relative h-full">
               <div className="absolute bottom-0 left-0 right-0 h-px bg-gray-200"></div>
-              {/* Y-axis labels */}
               <div className="absolute top-0 left-0 h-full flex flex-col justify-between text-xs text-gray-500 py-2">
-                <span>₹100K</span>
-                <span>₹75K</span>
-                <span>₹50K</span>
-                <span>₹25K</span>
+                <span>₹{Math.ceil(maxRevenue / 1000)}K</span>
+                <span>₹{Math.ceil(maxRevenue * 0.75 / 1000)}K</span>
+                <span>₹{Math.ceil(maxRevenue * 0.5 / 1000)}K</span>
+                <span>₹{Math.ceil(maxRevenue * 0.25 / 1000)}K</span>
                 <span>₹0</span>
               </div>
-              {/* Chart bars */}
               <div className="flex justify-between items-end h-full ml-10">
                 {revenueData.map((item, index) => (
                   <div key={index} className="flex flex-col items-center w-full max-w-10">
                     <div 
                       className="w-6 bg-blue-500 rounded-t transition-all duration-500 hover:bg-blue-600 cursor-pointer relative group"
-                      style={{ height: `${(item.amount / 100000) * 100}%` }}
+                      style={{ height: `${maxRevenue > 0 ? (item.amount / maxRevenue) * 100 : 0}%` }}
                     >
                       <div className="hidden group-hover:block absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
                         ₹{item.amount.toLocaleString()}
@@ -165,7 +202,6 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* Service Popularity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-white rounded-lg shadow">
           <div className="p-6 border-b border-gray-200">
@@ -192,65 +228,34 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* Customer Satisfaction */}
         <div className="bg-white rounded-lg shadow">
           <div className="p-6 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-800">Customer Satisfaction</h3>
+            <h3 className="text-lg font-semibold text-gray-800">Booking Status Breakdown</h3>
           </div>
           <div className="p-6">
             <div className="space-y-6">
-              <div className="relative">
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium text-gray-700">Excellent</span>
-                  <span className="text-sm font-medium text-gray-700">{customerSatisfactionData.excellent}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div 
-                    className="bg-green-600 h-2.5 rounded-full"
-                    style={{ width: `${customerSatisfactionData.excellent}%` }}
-                  ></div>
-                </div>
-              </div>
-              <div className="relative">
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium text-gray-700">Good</span>
-                  <span className="text-sm font-medium text-gray-700">{customerSatisfactionData.good}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div 
-                    className="bg-blue-600 h-2.5 rounded-full"
-                    style={{ width: `${customerSatisfactionData.good}%` }}
-                  ></div>
-                </div>
-              </div>
-              <div className="relative">
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium text-gray-700">Average</span>
-                  <span className="text-sm font-medium text-gray-700">{customerSatisfactionData.average}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div 
-                    className="bg-yellow-500 h-2.5 rounded-full"
-                    style={{ width: `${customerSatisfactionData.average}%` }}
-                  ></div>
-                </div>
-              </div>
-              <div className="relative">
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium text-gray-700">Poor</span>
-                  <span className="text-sm font-medium text-gray-700">{customerSatisfactionData.poor}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div 
-                    className="bg-red-500 h-2.5 rounded-full"
-                    style={{ width: `${customerSatisfactionData.poor}%` }}
-                  ></div>
-                </div>
-              </div>
+              {(['excellent', 'good', 'average', 'poor'] as const).map((key) => {
+                const colors = { excellent: 'bg-green-600', good: 'bg-blue-600', average: 'bg-yellow-500', poor: 'bg-red-500' };
+                const labels = { excellent: 'Completed', good: 'Upcoming', average: 'Other', poor: 'Cancelled' };
+                return (
+                  <div key={key} className="relative">
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm font-medium text-gray-700">{labels[key]}</span>
+                      <span className="text-sm font-medium text-gray-700">{customerSatisfactionData[key]}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div 
+                        className={`${colors[key]} h-2.5 rounded-full`}
+                        style={{ width: `${customerSatisfactionData[key]}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
       </div>
     </DashboardLayout>
   );
-} 
+}

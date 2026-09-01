@@ -1509,7 +1509,7 @@ export default function ServicesPage() {
   };
 
   return (
-    <DashboardLayout adminOnly={false}>
+    <DashboardLayout adminOnly={true}>
       {isAddModalOpen && (
         <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Add New Service">
           <ServiceForm

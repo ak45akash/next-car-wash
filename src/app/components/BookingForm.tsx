@@ -57,10 +57,19 @@ const BookingForm = ({ preselectedServiceId }: BookingFormProps) => {
   
   const paymentMethod = watch('paymentMethod');
   const watchedService = watch('service');
-  const selectedServiceObject = services.find(service => service.id === watchedService);
+  const selectedServiceObject = services.find(service => service.id?.toString() === (watchedService ?? '').toString());
   const servicePrice = selectedServiceObject ? `₹${selectedServiceObject.price}` : '';
 
 
+
+  // Convert a string to a URL-friendly slug (to match links like /book?service=basic-wash)
+  const toSlug = (value: string) =>
+    value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
 
   useEffect(() => {
     async function loadServices() {
@@ -73,11 +82,17 @@ const BookingForm = ({ preselectedServiceId }: BookingFormProps) => {
           
           // If a service is preselected and exists in the data, use it
           if (preselectedServiceId) {
-            // Convert preselectedServiceId to string for comparison since service.id might be string
-            const preselectedService = serviceData.find(service => service.id.toString() === preselectedServiceId.toString());
+            // Try by exact id match
+            const preselectedServiceById = serviceData.find(service => service.id.toString() === preselectedServiceId.toString());
+            // If id match fails, try by slug of service name (supports links like basic-wash, steam-wash)
+            const preselectedServiceBySlug = preselectedServiceById
+              ? undefined
+              : serviceData.find(service => toSlug(service.name) === preselectedServiceId.toString().toLowerCase());
             
-            if (preselectedService) {
-              initialServiceId = preselectedServiceId;
+            if (preselectedServiceById) {
+              initialServiceId = preselectedServiceById.id.toString();
+            } else if (preselectedServiceBySlug) {
+              initialServiceId = preselectedServiceBySlug.id.toString();
             } else {
               // If preselected service doesn't exist, fall back to Basic Wash or first service
               const basicWash = serviceData.find(service => service.name.toLowerCase().includes('basic'));
@@ -136,18 +151,17 @@ const BookingForm = ({ preselectedServiceId }: BookingFormProps) => {
         time_slot: data.time,
         payment_method: data.paymentMethod,
         upi_id: data.upiId || null,
-        status: 'pending',
+        status: 'Upcoming',
+        payment_status: 'Pending',
         created_at: new Date().toISOString()
       };
       
-      // Submit to Supabase
+      // Submit booking (payment integration skipped for now)
       await createBooking(bookingData);
-      
-      // Reset form and show success message
+
       reset();
       setSelectedDate(null);
       if (services.length > 0) {
-        // Reset to Basic Wash or first service
         const basicWash = services.find(service => service.name.toLowerCase().includes('basic'));
         setSelectedService(basicWash ? basicWash.id : services[0].id);
       }

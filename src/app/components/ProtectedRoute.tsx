@@ -19,15 +19,10 @@ export default function ProtectedRoute({
   const [error, setError] = useState<string | null>(null);
   const [redirectInProgress, setRedirectInProgress] = useState(false);
 
-  // Add debugging info
-  console.log('ProtectedRoute - Initial state:', { 
-    userExists: !!user, 
-    loading, 
-    isAdmin, 
-    supabaseInitialized: isInitialized,
-    checkedAuth,
-    pathname: typeof window !== 'undefined' ? window.location.pathname : 'server-side',
-  });
+  // Debug in development only
+  if (process.env.NODE_ENV === 'development') {
+    console.log('ProtectedRoute - state:', { userExists: !!user, loading, isAdmin, checkedAuth });
+  }
 
   const redirect = useCallback((path: string) => {
     // Avoid redirecting if already at the destination

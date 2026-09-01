@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { FaUserCog, FaUserPlus, FaTrash, FaEdit, FaEye, FaEyeSlash } from 'react-icons/fa';
 import DashboardLayout from '../components/DashboardLayout';
-import { supabase } from '@/lib/supabase';
 
 interface UserProfile {
   id: string;
@@ -110,18 +109,12 @@ export default function SettingsPage() {
     try {
       setLoading(true);
       
-      if (!supabase) {
-        throw new Error('Database connection not available');
+      const response = await fetch('/api/admin/users');
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
       }
       
-      // Fetch profiles which contain role information
-      const { data: profiles, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-        
-      if (error) throw error;
-      
+      const profiles = await response.json();
       setUsers(profiles || []);
     } catch (err) {
       console.error('Error fetching users:', err);
@@ -140,54 +133,34 @@ export default function SettingsPage() {
       return;
     }
     
-    if (!supabase) {
-      setError('Database connection not available');
-      return;
-    }
-    
     try {
       setError(null);
       setLoading(true);
       
-      if (!supabase) {
-        throw new Error('Database connection not available');
-      }
-      
-      // Sign up the user
-      const { data, error } = await supabase.auth.admin.createUser({
-        email: newUserEmail,
-        password: newUserPassword,
-        email_confirm: true
+      const response = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: newUserEmail,
+          password: newUserPassword,
+          role: newUserRole,
+        }),
       });
       
-      if (error) throw error;
-      
-      if (data?.user) {
-        // Update the user's role
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ role: newUserRole })
-          .eq('id', data.user.id);
-          
-        if (updateError) throw updateError;
-        
-        // Add the new user to the list
-        const newUser: UserProfile = {
-          id: data.user.id,
-          email: newUserEmail,
-          role: newUserRole,
-          created_at: new Date().toISOString()
-        };
-        
-        setUsers([newUser, ...users]);
-        setNewUserEmail('');
-        setNewUserPassword('');
-        setNewUserRole('user');
-        setShowAddUserForm(false);
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to add user');
       }
+      
+      const newUser = await response.json();
+      setUsers([newUser, ...users]);
+      setNewUserEmail('');
+      setNewUserPassword('');
+      setNewUserRole('user');
+      setShowAddUserForm(false);
     } catch (err) {
       console.error('Error adding user:', err);
-      setError('Failed to add user. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to add user. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -198,16 +171,15 @@ export default function SettingsPage() {
     try {
       setError(null);
       
-      if (!supabase) {
-        throw new Error('Database connection not available');
-      }
-      
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: newRole })
-        .eq('id', userId);
+      const response = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, role: newRole }),
+      });
         
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error('Failed to update user');
+      }
       
       setUsers(users.map(user => 
         user.id === userId ? { ...user, role: newRole } : user
@@ -226,21 +198,18 @@ export default function SettingsPage() {
       return;
     }
     
-    if (!supabase) {
-      setError('Database connection not available');
-      return;
-    }
-    
     try {
       setError(null);
       
-      if (!supabase) {
-        throw new Error('Database connection not available');
+      const response = await fetch('/api/admin/users', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete user');
       }
-      
-      const { error } = await supabase.auth.admin.deleteUser(userId);
-      
-      if (error) throw error;
       
       setUsers(users.filter(user => user.id !== userId));
     } catch (err) {
